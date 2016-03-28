@@ -38,6 +38,9 @@ void* thread_reflexion(void *arg){
     perror("pthread_create thread_timer in thread_reflexion");
     return EXIT_FAILURE;
   }
+  pthread_mutex_lock(&mutex_cond_reflexion);
+  pthread_cond_wait(&cond_reflexion, &mutex_cond_reflexion);
+  pthread_mutex_lock(&mutex_cond_reflexion);
   pthread_exit(NULL);
 }
 
