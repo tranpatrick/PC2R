@@ -119,7 +119,7 @@ void* thread_reception(void *arg){
     memset(buffer, '\0', MAX_SIZE);
 
     /* CONNEXION */
-    if(strcmp(cmd, "CONNEX") == 0){
+    if(strcmp(cmd, "CONNEXION") == 0){
       bienvenue(user, sock_com);
 
       /* Si le nombre de joueurs est au moins 2, lancer session et timer */
