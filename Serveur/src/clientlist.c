@@ -29,8 +29,17 @@ client_list* get_client(client_list* l, char *name){
   return NULL;
 }
 
+client_list* client_copy(client_list *l){
+  client_list *res = (client_list*) malloc(sizeof(client_list));
+  res->tid = l->tid;
+  res->socket = l->socket;
+  res->score = l->score;
+  res->proposition = l->proposition;
+  res->next = NULL;
+}
+
 client_list* create_client_list(pthread_t tid, int sock, client_list* next){
-  client_list *res = malloc(sizeof(client_list));
+  client_list *res = (client_list*) malloc(sizeof(client_list));
   res->tid = tid;
   res->socket = sock;
   res->score = 0;
@@ -39,7 +48,12 @@ client_list* create_client_list(pthread_t tid, int sock, client_list* next){
   return res;
 }
 
-client_list* add_client(client_list *l, pthread_t tid, int sock){
+client_list* add_client(client_list *l, client_list *client){
+  client->next = l;
+  return client;
+}
+
+client_list* add_new_client(client_list *l, pthread_t tid, int sock){
   client_list *e = create_client_list(tid, sock, l);
   l = e;
   return l;

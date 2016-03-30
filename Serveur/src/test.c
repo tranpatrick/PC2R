@@ -4,7 +4,7 @@
 
 
 int main(){
-  client_list *l = create_client_list(10, 1, NULL);
+  /*  client_list *l = create_client_list(10, 1, NULL);
   printf("nbClients = %d\n", client_list_length(l));
   print_client_list(l);
   printf("----------------\n");
@@ -24,6 +24,6 @@ int main(){
   suppr_client(l, 37);
   print_client_list(l);
   printf("nbTids = %d\n", client_list_length(l));
-  destroy_client_list(l);
+  destroy_client_list(l); */
   return 0;
 }

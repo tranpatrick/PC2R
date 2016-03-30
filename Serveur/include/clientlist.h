@@ -13,9 +13,11 @@ typedef struct client_list{
 } client_list;
 
 pthread_t get_tid(client_list *l, char *name);
-client_list* get_client(client_list* l, char *name);
+client_list* get_client(client_list *l, char *name);
+/*client_list* client_copy(client_list *l);*/
 client_list* create_client_list(pthread_t tid, int sock, client_list* next);
-client_list* add_client(client_list *l, pthread_t tid, int sock);
+client_list* add_client(client_list *l, client_list *client);
+client_list* add_new_client(client_list *l, pthread_t tid, int sock);
 client_list* suppr_client(client_list *l, char *name);
 client_list* add_name_client(client_list *l, int socket, char *name);
 int client_exists(client_list *l, char *name);

@@ -25,28 +25,55 @@
 /* Gère les timers pour les phases */
 void* thread_timer(void *arg){
   int sec = (int) arg;
+  int phase = get_phase();
   sleep(sec);
-  pthread_mutex_lock(&mutex_cond_reflexion);
-  pthread_cond_signal(&cond_reflexion);
-  pthread_mutex_unlock(&mutex_cond_reflexion);
+  switch(phase){
+  case PHASE_REFLEXION:  
+    pthread_mutex_lock(&mutex_cond_reflexion);
+    pthread_cond_signal(&cond_reflexion);
+    pthread_mutex_unlock(&mutex_cond_reflexion);
+    break;
+  case PHASE_ENCHERE:
+    pthread_mutex_lock(&mutex_cond_enchere);
+    pthread_cond_signal(&cond_enchere);
+    pthread_mutex_unlock(&mutex_cond_enchere);
+    break;
+  case PHASE_RESOLUTION:
+    pthread_mutex_lock(&mutex_cond_resolution);
+    pthread_cond_signal(&cond_resolution);
+    pthread_mutex_unlock(&mutex_cond_resolution);
+    break;
+  default:
+    break;
+  }
   pthread_exit(NULL);
 }
 
 /* Gère la phase d'enchere */
 void* thread_enchere(void *arg){
+  printf("PHASE D'ENCHERE\n\n");
+  
+  set_phase("enchere");
+
   if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 30) != 0){
     perror("pthread_create thread_timer in thread_enchere");
     return EXIT_FAILURE;
   }
   pthread_mutex_lock(&mutex_cond_enchere);
   pthread_cond_wait(&cond_enchere, &mutex_cond_enchere);
-  pthread_mutex_lock(&mutex_cond_enchere);
+  pthread_mutex_unlock(&mutex_cond_enchere);
+
+  /* Fin de la phase d'enchere */
+  finenchere();
 }
 
 /* Gère la phase de réflexion */
 void* thread_reflexion(void *arg){
+
+  printf("PHASE DE REFLEXION\n\n");
   
   /* Nouveau tour */
+  set_phase("reflexion");
   tour(enigme);
   
   if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 300) != 0){
@@ -79,13 +106,16 @@ void* thread_reception(void *arg){
   int sock_com = (int) arg;
   int nb_lus, nb_clients;
   char cmd[20], user[MAX_SIZE], coups[20];
+  int coups_int;
   char buffer[MAX_SIZE];
   while((nb_lus = read(sock_com, &buffer, MAX_SIZE)) > 0){
     sscanf(buffer, "%[^/]/%[^/]/%[^/]/", cmd, user, coups);
     printf("\ncmd: %s\n", cmd);
     printf("user: %s\n", user);
-    printf("coups: %s", coups);
-      
+    printf("coups: %s\n", coups);
+
+    coups_int = atoi(coups);
+    
     memset(buffer, '\0', MAX_SIZE);
 
     /* CONNEXION */
@@ -123,19 +153,24 @@ void* thread_reception(void *arg){
 
     /* SOLUTION */
     else if(strcmp(cmd, "SOLUTION") == 0){
-      tuastrouve(user, coups);
+      tuastrouve(user, coups_int);
+    }
+
+    /* ENCHERE */
+    else if(strcmp(cmd, "ENCHERE") == 0){
+      traitement_enchere(user, coups_int);
     }
 
  
 
-    printf("Listes : \n");
+    /*    printf("Listes : \n");
     pthread_mutex_lock(&mutex_attente);
     print_client_list(file_attente);
     pthread_mutex_unlock(&mutex_attente);
     pthread_mutex_lock(&mutex_clients);
     print_client_list(clients);
     pthread_mutex_unlock(&mutex_clients);
-    printf("\n");
+    printf("\n"); */
     
     memset(cmd, '\0', 20);
     memset(user, '\0', MAX_SIZE);
@@ -155,7 +190,7 @@ void* client_thread(void *arg){
   char buffer[MAX_SIZE];
 
   pthread_mutex_lock(&mutex_attente);
-  file_attente = add_client(file_attente, pthread_self(), sock_com);
+  file_attente = add_new_client(file_attente, pthread_self(), sock_com);
   pthread_mutex_unlock(&mutex_attente);
 
   /* Création d'une thread qui va gérer la réception de message */  

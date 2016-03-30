@@ -20,7 +20,6 @@ pthread_mutex_t mutex_attente = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_etat = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_tour = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_phase = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutex_mincoups = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_joueur_solution = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t mutex_cond_reflexion = PTHREAD_MUTEX_INITIALIZER;
@@ -35,7 +34,8 @@ client_list *clients = NULL; /* Liste des clients connectés */
 client_list *file_attente = NULL; /* Liste des clients en attente d'un nouveau tour */
 
 int num_tour;
-int min_coups;
+/*int min_enchere;*/
+/*client_list *liste_encherisseurs = NULL;*/
 int joueur_solution;
 
 /* plateau par défaut pour l'instant */
@@ -71,17 +71,18 @@ char* bilan(){
 
 /* Permet de changer l'état actuel du serveur */
 void set_phase(char *phase){
+  printf("je passe dans set_phase\n");
   pthread_mutex_lock(&mutex_etat);
   if(strcmp(phase, "nulle") == 0)
     etat = PHASE_NULL;
-  else if(strcmp(phase, "reflexion")){
+  else if(strcmp(phase, "reflexion") == 0){
     etat = PHASE_REFLEXION;  
     pthread_mutex_lock(&mutex_tour);
     num_tour = 0;
     pthread_mutex_unlock(&mutex_tour);
-  }else if(strcmp(phase, "enchere"))
+  }else if(strcmp(phase, "enchere") == 0)
     etat = PHASE_ENCHERE;
-  else if(strcmp(phase, "resolution"))
+  else if(strcmp(phase, "resolution") == 0)
     etat = PHASE_RESOLUTION;
   pthread_mutex_unlock(&mutex_etat);
 }
@@ -130,15 +131,11 @@ void connecte(char *name){
   char buffer[MAX_SIZE];
   client_list *l = clients;
   client_list *l2 = file_attente;
+  sprintf(buffer, "CONNECTE/%s/\n", name);
   pthread_mutex_lock(&mutex_clients);
   while(l != NULL){
-    memset(buffer, '\0', MAX_SIZE);
-    if(l->name != NULL){
-      if(strcmp(l->name, name) != 0){
-        sprintf(buffer, "CONNECTE/%s/\n", name);
-        write(l->socket, buffer, strlen(buffer));
-      }
-    }
+    if(strcmp(l->name, name) != 0)
+      write(l->socket, buffer, strlen(buffer));
     l = l->next;
   }
   pthread_mutex_unlock(&mutex_clients);
@@ -178,7 +175,6 @@ void sorti(char *name){
   
   pthread_mutex_lock(&mutex_clients);
   while(l != NULL){
-    memset(buffer, '\0', MAX_SIZE);
     if(strcmp(l->name, name) != 0){
       write(l->socket, buffer, strlen(buffer));
     }
@@ -273,9 +269,9 @@ void tour(char *enigme){
   pthread_mutex_unlock(&mutex_clients);
 
   /* Reinitialisation du nombre de coup min */
-  pthread_mutex_lock(&mutex_mincoups);
-  min_coups = 999;
-  pthread_mutex_unlock(&mutex_mincoups);
+  /*  pthread_mutex_lock(&mutex_min_enchere);
+  min_enchere = 999;
+  pthread_mutex_unlock(&mutex_min_enchere);*/
 
   /* Reinitialisation du boolean joueur_solution */
   pthread_mutex_lock(&mutex_joueur_solution);
@@ -287,17 +283,22 @@ void tour(char *enigme){
 /* validation de l'annonce d'une solution par le serveur, fin de la phase de reflexion */
 void tuastrouve(char *name, int coups){
   client_list *aux = clients;
+  client_list *tmp;
   pthread_mutex_lock(&mutex_clients);
   while(aux != NULL){
     if(strcmp(aux->name, name) == 0){
       aux->proposition = coups;
-
-      printf("hello\n");
       
       /* Sauvegarde du nb coups que le joueur propose */
-      pthread_mutex_lock(&mutex_mincoups);
-      min_coups = coups;
-      pthread_mutex_unlock(&mutex_mincoups);
+      /*      pthread_mutex_lock(&mutex_min_enchere);
+	      min_enchere = coups;*/
+      tmp = get_client(clients, name);
+      tmp->proposition = coups;
+
+      /* Ajout du client dans la liste des clients qui vont jouer */
+      /*liste_encherisseurs = add_client(liste_encherisseurs, client_copy(get_client(clients, name)));*/
+
+      /*pthread_mutex_unlock(&mutex_min_enchere);*/
       pthread_mutex_unlock(&mutex_clients);
 
       /* joueur_solution = 1 */
@@ -319,6 +320,7 @@ void ilatrouve(char *name, int coups){
   client_list *aux = clients;
   char buffer[MAX_SIZE];
   sprintf(buffer, "ILATROUVE/%s/%d/\n", name, coups); /** A DEBUG ICI **/
+  printf("buffer : %s\n", buffer);
   pthread_mutex_lock(&mutex_clients);
   while(aux != NULL){
     if(strcmp(aux->name, name) != 0){
@@ -336,7 +338,6 @@ void ilatrouve(char *name, int coups){
 
 /* expiration du delai de reflexion, fin de la phase de reflexion */
 void finreflexion(){
-
   char buffer[MAX_SIZE];
   client_list *aux = clients;
   sprintf(buffer, "FINREFLEXION/\n");
@@ -347,14 +348,89 @@ void finreflexion(){
   return;
 }
 
+/* traitement d'une enchere */
+void traitement_enchere(char *name, int coups){
+  pthread_mutex_lock(&mutex_clients);
+  client_list *cl = get_client(clients, name);
+  if(cl->proposition != -1 && coups >= cl->proposition){
+    /* Echec */
+    echec(cl->socket, name);
+  }else{
+    client_list *aux = clients;
+    int bool = 0;
+    char *user_incoherent;
+    /* Vérification qu'il n'existe pas une enchere de même valeur */
+    while(aux != NULL){
+      if(aux->proposition == coups){
+	user_incoherent = aux->name;
+	bool = 1;
+	break;
+      }
+      aux = aux->next;
+    }
+    if(bool == 1){
+      /* Echec */
+      
+      echec(cl->socket, user_incoherent);
+    }else{
+      /* Validation */
+      cl->proposition = coups;
+      validation(cl->socket);
+      pthread_mutex_unlock(&mutex_clients);
+      nouvelleenchere(name, coups);
+    }
+  }
+  pthread_mutex_unlock(&mutex_clients);
+}
+
 /* validation d'une enchere */
-void tuenchere(int sock_com){return;}
+void validation(int socket){
+  write(socket, "VALIDATION/\n", 12);
+}
 
 /* signalement aux autres joueurs d'une enchere */
-void ilenchere(client_list *l){return;}
+void echec(int socket, char *user){
+  char buffer[MAX_SIZE];
+  sprintf(buffer, "ECHEC/%s/\n", user);
+  write(socket, buffer, strlen(buffer));
+}
+
+/* signalement aux autres joueurs d'une nouvelle enchere */
+void nouvelleenchere(char *user, int coups){
+  client_list *l = clients;
+  char buffer[MAX_SIZE];
+  sprintf(buffer, "NOUVELLEENCHERE/%s/%d/\n", user, coups);
+  pthread_mutex_lock(&mutex_clients);
+  while(l != NULL){
+    if(strcmp(l->name, user) != 0)
+      write(l->socket, buffer, strlen(buffer));
+    l = l->next;
+  }
+  pthread_mutex_unlock(&mutex_clients);
+}
 
 /* fin de la phase d'enchere, le joueur actif est user */
-void finenchere(client_list *l, char *name, int coups){return;}
+void finenchere(){
+  client_list *l = clients;
+  char *user;
+  int min = 999999;
+  char buffer[MAX_SIZE];
+  pthread_mutex_lock(&mutex_clients);
+  while(l != NULL){
+    if(l->proposition != -1 && l->proposition < min){
+      user = l->name;
+      min = l->proposition;
+    }
+    l = l->next;
+  }
+  sprintf(buffer, "FINENCHERE/%s/%d/\n", user, min);
+  l = clients;
+  while(l != NULL){
+    write(l->socket, buffer, strlen(buffer));
+    l = l->next;
+  }
+  pthread_mutex_unlock(&mutex_clients);
+}
 
 /* signalement aux clients de la solution proposée */
 void sasolution(client_list *l, char *solution){return;}

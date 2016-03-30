@@ -4,23 +4,24 @@
 #include "../include/clientlist.h"
 #include <pthread.h>
 
-extern int etat;
+extern int etat; /* phase courant du jeu (NECESSAIRE OU PAS ?) */
 extern client_list *clients; /* Liste des clients connectés */
 extern client_list *file_attente; /* Liste des clients en attente d'un nouveau tour */
-extern int num_tour;
-extern int min_coups;
-extern const char *plateau;
-extern const char *enigme;
-extern pthread_t tid_phase;
-extern pthread_t tid_timer;
-extern int joueur_solution;
+extern int num_tour; /* numero de tour courant */
+extern int min_enchere; /* enchere minimum */
+extern client_list *liste_encherisseurs; /* joueur qui a le moins de coups */
+extern const char *plateau; /* plateau de jeu */
+extern const char *enigme; /* disposition des pions */
+extern pthread_t tid_phase; /* tid de la thread qui gère la phase courante */
+extern pthread_t tid_timer; /* tid de la thread qui gère le timer courant */
+extern int joueur_solution; /* booleen pour savoir si un joueur a émis une solution */
 
 extern pthread_mutex_t mutex_clients;
 extern pthread_mutex_t mutex_attente;
 extern pthread_mutex_t mutex_etat;
 extern pthread_mutex_t mutex_tour;
 extern pthread_mutex_t mutex_phase;
-extern pthread_mutex_t mutex_mincoups;
+extern pthread_mutex_t mutex_min_enchere;
 extern pthread_mutex_t mutex_joueur_solution;
 
 extern pthread_mutex_t mutex_cond_reflexion;
@@ -68,14 +69,20 @@ void ilatrouve(char *name, int coups);
 /* expiration du delai de reflexion, fin de la phase de reflexion */
 void finreflexion();
 
-/* validation d'une enchere */
-void tuenchere(int sock_com);
+/* traitement d'une enchere */
+void traitement_enchere(char *name, int coups);
 
-/* signalement aux autres joueurs d'une enchere */
-void ilenchere(client_list *l);
+/* validation d'une enchere */
+void validation(int socket);
+
+/* signalement au joueur de l'echec d'une enchere */
+void echec(int socket, char *user);
+
+/* signalement aux autres joueurs d'une nouvelle enchere */
+void nouvelleenchere(char *user, int coups);
 
 /* fin de la phase d'enchere, le joueur actif est user */
-void finenchere(client_list *l, char *name, int coups);
+void finenchere();
 
 /* signalement aux clients de la solution proposée */
 void sasolution(client_list *l, char *solution);
