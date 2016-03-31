@@ -1,0 +1,22 @@
+Meilleure gestion des listes utilisateurs (file d'attente etc)
+
+Meilleure gestion de la connexion en cours de partie, 2 choix
+	  - on envoie solution, mais pas tour, on attend le tour suivant
+	  - on n'envoie rien on attend le tour suivant
+
+relance de la thread resolution si la solution founie n'est pas bonne
+
+calcul du score et mise a jour du bilan
+
+tester la deconnexion
+
+tester le client avec 3 ou 4 client
+
+
+Extension
+
+CHAT a ajouter cote serveur easy
+JOURNAL si on a le temps
+PERSISTANCE possible
+EXTENSION DU PLATEAU : faisable mais chiant
+CLIENT AUTONOME fait, mais client idiot, il ne sait pas trouver une bonne solution
