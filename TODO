@@ -1,3 +1,5 @@
+SERVEUR
+
 Meilleure gestion des listes utilisateurs (file d'attente etc)
 
 Meilleure gestion de la connexion en cours de partie, 2 choix
@@ -12,6 +14,12 @@ tester la deconnexion
 
 tester le client avec 3 ou 4 client
 
+
+CLIENT
+
+fix l'affichage de la meilleure enchere actuelle
+faire attention quand on envoie un message a la toute fin d'une phase (mutex sur phase ?)
+Faire en sorte que l'animation d'une solution dure toujours 20seconde pour eviter attente inutile
 
 Extension
 
