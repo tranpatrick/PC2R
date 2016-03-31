@@ -15,6 +15,7 @@ square* create_square(){
 }
 
 board* create_board(char* plateau, char* enigme){
+  printf("ENTREE create_board\n");
   board *res = (board*) malloc(sizeof(board));
   int i, j, x, y;
   int xr, yr, xb, yb, xj, yj, xv, yv, xc, yc, color;
@@ -63,6 +64,7 @@ board* create_board(char* plateau, char* enigme){
   /* Initialisation des positions des robots et de la cible */
   sscanf(enigme, "(%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%c)",
 	 &xr, &yr, &xb, &yb, &xj, &yj, &xv, &yv, &xc, &yc, &color);
+  printf("CIBLE => %d,%d\n", xc, yc);
   res->tab[xr][yr]->robot = 'R';
   res->tab[xb][yb]->robot = 'B';
   res->tab[xj][yj]->robot = 'J';
@@ -82,20 +84,30 @@ board* create_board(char* plateau, char* enigme){
   /* Spécifier la couleur la case cible */
   res->xc = xc;
   res->yc = yc;
-
+  printf("CIBLE => %d,%d\n", xc, yc);
   /* Spécifier la couleur du robot à amener sur la cible */
   res->color = color;
-
+  printf("SORTIE create_board\n");
   return res;
 }
 
 int simulation(char *desc_plateau, char *enigme, char *solution){
+  printf("ENTREE simulation\n");
   char couleur, direction;
   int i = 0;
   int xr, yr, xb, yb, xj, yj, xv, yv, xc, yc, color;
 
   board *plateau = create_board(desc_plateau, enigme);
-  
+  xc = plateau->xc;
+  yc = plateau->yc;
+  xr = plateau->xr;
+  yr = plateau->yr;
+  xb = plateau->xb;
+  yb = plateau->yb;
+  xj = plateau->xj;
+  yj = plateau->yj;
+  xv = plateau->xv;
+  yv = plateau->yv;
   while(solution[i] != '\0'){
     if(i%2 != 0){
       direction = solution[i];
@@ -107,7 +119,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'H':
 	  xr = plateau->xr;
 	  yr = plateau->yr;
-	  while(plateau->tab[xr][yr]->top_wall != 0
+	  while(xr > 0 && plateau->tab[xr][yr]->top_wall == 0
 		&& plateau->tab[xr-1][yr]->bottom_wall == 0
 		&& plateau->tab[xr-1][yr]->robot == '0'){
 	    plateau->tab[xr][yr]->robot = '0';
@@ -119,7 +131,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'B':
 	  xr = plateau->xr;
 	  yr = plateau->yr;
-	  while(plateau->tab[xr][yr]->bottom_wall == 0
+	  while(xr < 15 && plateau->tab[xr][yr]->bottom_wall == 0
 		&& plateau->tab[xr+1][yr]->top_wall == 0
 		&& plateau->tab[xr+1][yr]->robot == '0'){
 	    plateau->tab[xr][yr]->robot = '0';
@@ -131,7 +143,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'D':
 	  xr = plateau->xr;
 	  yr = plateau->yr;
-	  while(plateau->tab[xr][yr]->right_wall == 0
+	  while(yr < 15 && plateau->tab[xr][yr]->right_wall == 0
 		&& plateau->tab[xr][yr+1]->left_wall == 0
 		&& plateau->tab[xr][yr+1]->robot == '0'){
 	    plateau->tab[xr][yr]->robot = '0';
@@ -143,7 +155,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'G':
 	  xr = plateau->xr;
 	  yr = plateau->yr;
-	  while(plateau->tab[xr][yr]->left_wall == 0
+	  while(yr > 0 && plateau->tab[xr][yr]->left_wall == 0
 		&& plateau->tab[xr][yr-1]->right_wall == 0
 		&& plateau->tab[xr][yr-1]->robot == '0'){
 	    plateau->tab[xr][yr]->robot = '0';
@@ -162,7 +174,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'H':
 	  xb = plateau->xb;
 	  yb = plateau->yb;
-	  while(plateau->tab[xb][yb]->top_wall != 0
+	  while(xb > 0 && plateau->tab[xb][yb]->top_wall == 0
 		&& plateau->tab[xb-1][yb]->bottom_wall == 0
 		&& plateau->tab[xb-1][yb]->robot == '0'){
 	    plateau->tab[xb][yb]->robot = '0';
@@ -174,7 +186,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'B':
 	  xb = plateau->xb;
 	  yb = plateau->yb;
-	  while(plateau->tab[xb][yb]->bottom_wall == 0
+	  while(xb < 15 && plateau->tab[xb][yb]->bottom_wall == 0
 		&& plateau->tab[xb+1][yb]->top_wall == 0
 		&& plateau->tab[xb+1][yb]->robot == '0'){
 	    plateau->tab[xb][yb]->robot = '0';
@@ -186,7 +198,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'D':
 	  xb = plateau->xb;
 	  yb = plateau->yb;
-	  while(plateau->tab[xb][yb]->right_wall == 0
+	  while(yb < 15 && plateau->tab[xb][yb]->right_wall == 0
 		&& plateau->tab[xb][yb+1]->left_wall == 0
 		&& plateau->tab[xb][yb+1]->robot == '0'){
 	    plateau->tab[xb][yb]->robot = '0';
@@ -198,7 +210,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'G':
 	  xb = plateau->xb;
 	  yb = plateau->yb;
-	  while(plateau->tab[xb][yb]->left_wall == 0
+	  while(yb > 0 && plateau->tab[xb][yb]->left_wall == 0
 		&& plateau->tab[xb][yb-1]->right_wall == 0
 		&& plateau->tab[xb][yb-1]->robot == '0'){
 	    plateau->tab[xb][yb]->robot = '0';
@@ -217,7 +229,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'H':
 	  xj = plateau->xj;
 	  yj = plateau->yj;
-	  while(plateau->tab[xj][yj]->top_wall != 0
+	  while(xj > 0 && plateau->tab[xj][yj]->top_wall == 0
 		&& plateau->tab[xj-1][yj]->bottom_wall == 0
 		&& plateau->tab[xj-1][yj]->robot == '0'){
 	    plateau->tab[xj][yj]->robot = '0';
@@ -229,7 +241,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'B':
 	  xj = plateau->xj;
 	  yj = plateau->yj;
-	  while(plateau->tab[xj][yj]->bottom_wall == 0
+	  while(yj < 15 && plateau->tab[xj][yj]->bottom_wall == 0
 		&& plateau->tab[xj+1][yj]->top_wall == 0
 		&& plateau->tab[xj+1][yj]->robot == '0'){
 	    plateau->tab[xj][yj]->robot = '0';
@@ -241,7 +253,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'D':
 	  xj = plateau->xj;
 	  yj = plateau->yj;
-	  while(plateau->tab[xj][yj]->right_wall == 0
+	  while(yj < 15 && plateau->tab[xj][yj]->right_wall == 0
 		&& plateau->tab[xj][yj+1]->left_wall == 0
 		&& plateau->tab[xj][yj+1]->robot == '0'){
 	    plateau->tab[xj][yj]->robot = '0';
@@ -253,7 +265,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'G':
 	  xj = plateau->xj;
 	  yj = plateau->yj;
-	  while(plateau->tab[xj][yj]->left_wall == 0
+	  while(yj > 0 && plateau->tab[xj][yj]->left_wall == 0
 		&& plateau->tab[xj][yj-1]->right_wall == 0
 		&& plateau->tab[xj][yj-1]->robot == '0'){
 	    plateau->tab[xj][yj]->robot = '0';
@@ -272,7 +284,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'H':
 	  xv = plateau->xv;
 	  yv = plateau->yv;
-	  while(plateau->tab[xv][yv]->top_wall != 0
+	  while(xv > 0 && plateau->tab[xv][yv]->top_wall == 0
 		&& plateau->tab[xv-1][yv]->bottom_wall == 0
 		&& plateau->tab[xv-1][yv]->robot == '0'){
 	    plateau->tab[xv][yv]->robot = '0';
@@ -284,7 +296,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'B':
 	  xv = plateau->xv;
 	  yv = plateau->yv;
-	  while(plateau->tab[xv][yv]->bottom_wall == 0
+	  while(xv < 15 && plateau->tab[xv][yv]->bottom_wall == 0
 		&& plateau->tab[xv+1][yv]->top_wall == 0
 		&& plateau->tab[xv+1][yv]->robot == '0'){
 	    plateau->tab[xv][yv]->robot = '0';
@@ -296,7 +308,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'D':
 	  xv = plateau->xv;
 	  yv = plateau->yv;
-	  while(plateau->tab[xv][yv]->right_wall == 0
+	  while(yv < 15 && plateau->tab[xv][yv]->right_wall == 0
 		&& plateau->tab[xv][yv+1]->left_wall == 0
 		&& plateau->tab[xv][yv+1]->robot == '0'){
 	    plateau->tab[xv][yv]->robot = '0';
@@ -308,7 +320,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	case 'G':
 	  xv = plateau->xv;
 	  yv = plateau->yv;
-	  while(plateau->tab[xv][yv]->left_wall == 0
+	  while(yv > 0 && plateau->tab[xv][yv]->left_wall == 0
 		&& plateau->tab[xv][yv-1]->right_wall == 0
 		&& plateau->tab[xv][yv-1]->robot == '0'){
 	    plateau->tab[xv][yv]->robot = '0';
@@ -332,6 +344,11 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
     i++;
   }
 
+  printf("rouge = %d,%d\n", xr,yr);
+  printf("bleu = %d,%d\n", xb,yb);
+  printf("jaune = %d,%d\n", xj,yj);
+  printf("vert = %d,%d\n", xv,yv);
+  printf("cible = %d,%d\n", xc,yc);
   /* Déterminer si la solution est bonne */
   switch(plateau->color){
   case 'R':
@@ -361,7 +378,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
   default:
     break;
   }
-
+  printf("SORTIE simulation\n");
   return 0;
   
 }

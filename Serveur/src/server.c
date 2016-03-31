@@ -42,10 +42,10 @@ void* thread_timer(void *arg){
     pthread_mutex_lock(&mutex_trop_long);
     trop_long = 1;
     pthread_mutex_unlock(&mutex_trop_long);  
-
     pthread_mutex_lock(&mutex_cond_resolution);
     pthread_cond_signal(&cond_resolution);
     pthread_mutex_unlock(&mutex_cond_resolution);
+    printf("FIN DU TIMER\n");
     break;
   default:
     break;
@@ -61,7 +61,7 @@ void *thread_resolution(void *arg){
   trop_long = 0;
   pthread_mutex_unlock(&mutex_trop_long);  
   
-  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 60) != 0){
+  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 15) != 0){
     perror("pthread_create thread_timer in thread_resolution");
     return EXIT_FAILURE;
   }
@@ -73,7 +73,7 @@ void *thread_resolution(void *arg){
   if(trop_long == 1)
     troplong();
   pthread_mutex_unlock(&mutex_trop_long);
-
+  printf("FIN THREAD_RESOLUTION\n");
   pthread_exit(NULL);
 }
 
@@ -83,7 +83,7 @@ void* thread_enchere(void *arg){
   
   set_phase("enchere");
 
-  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 30) != 0){
+  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 10) != 0){
     perror("pthread_create thread_timer in thread_enchere");
     return EXIT_FAILURE;
   }
@@ -95,7 +95,14 @@ void* thread_enchere(void *arg){
   finenchere();
 
   /* Initiaion de la phase de résolution */
+  
+  pthread_mutex_lock(&mutex_phase);
   set_phase("resolution");
+  if(pthread_create(&tid_phase, NULL, thread_resolution, NULL) != 0){
+    perror("pthread_create thread_resolution");
+    return EXIT_FAILURE;
+  }
+  pthread_mutex_unlock(&mutex_phase);
   printf("PHASE DE RESOLUTION\n\n");
 
 }
@@ -109,7 +116,7 @@ void* thread_reflexion(void *arg){
   set_phase("reflexion");
   tour(enigme);
   
-  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 300) != 0){
+  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 10) != 0){
     perror("pthread_create thread_timer in thread_reflexion");
     return EXIT_FAILURE;
   }
@@ -189,14 +196,21 @@ void* thread_reception(void *arg){
       if(get_phase() == PHASE_REFLEXION)
 	tuastrouve(user, coups_int);
       else{
+	pthread_cancel(tid_timer);
+	pthread_mutex_lock(&mutex_trop_long);
+	trop_long = 0;
+	pthread_mutex_unlock(&mutex_trop_long);
+	pthread_mutex_lock(&mutex_cond_resolution);
+	pthread_cond_signal(&cond_resolution);
+	pthread_mutex_unlock(&mutex_cond_resolution);
+
+
+
 	sasolution(user, coups);
+
+	printf("----------hello\n");
 	/* création de la thread de résolution */
-	pthread_mutex_lock(&mutex_phase);
-	if(pthread_create(&tid_phase, NULL, thread_resolution, NULL) != 0){
-	  perror("pthread_create thread_resolution");
-	  return EXIT_FAILURE;
-	}
-	pthread_mutex_unlock(&mutex_phase);
+	
       }
     }
 
@@ -221,7 +235,7 @@ void* thread_reception(void *arg){
     
     memset(cmd, '\0', 20);
     memset(user, '\0', MAX_SIZE);
-    memset(coups, '\0', 20);
+    memset(coups, '\0', 200);
     memset(buffer, '\0', MAX_SIZE);
   }
   pthread_exit((void*) 0);
