@@ -1,25 +1,33 @@
 SERVEUR
 
+utiliser variable globale pour les delais
+
 Meilleure gestion des listes utilisateurs (file d'attente etc)
 
 Meilleure gestion de la connexion en cours de partie, 2 choix
 	  - on envoie solution, mais pas tour, on attend le tour suivant
 	  - on n'envoie rien on attend le tour suivant
 
+creer Generateur d'enigme aleatoire
+
+Fix des conflits ( encheres envoyes en meme temps ou trouve )
+
 relance de la thread resolution si la solution founie n'est pas bonne
 
 calcul du score et mise a jour du bilan
 
-tester la deconnexion
+tester la deconnexion + arret session score objectif ou nombre de joueurs <= 1
 
 tester le client avec 3 ou 4 client
 
 
 CLIENT
-
+rajouter timer ? 
+Afficher le nom du joueur qqpart
 fix l'affichage de la meilleure enchere actuelle
 faire attention quand on envoie un message a la toute fin d'une phase (mutex sur phase ?)
 Faire en sorte que l'animation d'une solution dure toujours 20seconde pour eviter attente inutile
+Fix solution non valide lorsque je spam le clavier
 
 Extension
 
