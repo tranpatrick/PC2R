@@ -15,6 +15,7 @@
 #define PHASE_REFLEXION 1
 #define PHASE_ENCHERE 2
 #define PHASE_RESOLUTION 3
+#define TEMPS_AFFICHAGE_SOLUTION 15
 
 pthread_mutex_t mutex_clients = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_attente = PTHREAD_MUTEX_INITIALIZER;
@@ -323,6 +324,7 @@ void tuastrouve(char *name, int coups){
 
   client_list *user = get_client(clients, name);
   write(user->socket, "TUASTROUVE/\n", strlen("TUASTROUVE/\n"));
+  /* user->proposition = coups; ladi a ecrit ca, proposition = -1 dans traitement solution */
   
   while(aux != NULL){
     if(strcmp(aux->name, name) == 0){
@@ -537,21 +539,27 @@ void mauvaise(){
 void traitement_solution(char *solution){
   char *tmp_name;
   pthread_mutex_lock(&mutex_joueur_actif);
+  client_list* tmp = joueur_actif;
   tmp_name = joueur_actif->name;
   int prop = joueur_actif->proposition;
+  int nbCoupsSolution = strlen(solution)/2;
   pthread_mutex_unlock(&mutex_joueur_actif);
   update_joueur_actif();
   
   /* Mise à jour du joueur actif */
- 
-  printf("allo\n");
-  if(simulation(plateau, enigme, solution) == 1){
+  /* chercher pourquoi proposition = -1 */
+  printf("proposition = %d\n",prop);
+  /* && nbCoupsSolution <= prop */
+  if(simulation(plateau, enigme, solution) == 1 ){ 
     printf("if simulation == 1)\n");
-    sleep(18);
+    tmp->score = tmp->score + 1;
+printf("score de %s = %d\n",tmp->name, tmp->score);
+    sleep(TEMPS_AFFICHAGE_SOLUTION);
+    
     bonne();
   }else{
     printf("simulation != 1\n");
-    sleep(10);
+    sleep(TEMPS_AFFICHAGE_SOLUTION);
     pthread_mutex_lock(&mutex_joueur_actif);
     if(joueur_actif == NULL)
       finreso();
@@ -593,4 +601,18 @@ void troplong(){
   }
   pthread_mutex_unlock(&mutex_clients);
   printf("FIN troplong()\n");
+}
+
+/* fonction de traitement de smessage du chat */
+void traitement_chat(char *user, char *coups) {
+client_list *l = clients;
+  char buffer[MAX_SIZE];
+  sprintf(buffer, "CHAT/%s/%s/\n", user, coups);
+  pthread_mutex_lock(&mutex_clients);
+  while(l != NULL){
+    if(strcmp(l->name, user) != 0)
+      write(l->socket, buffer, strlen(buffer));
+    l = l->next;
+  }
+  pthread_mutex_unlock(&mutex_clients);
 }

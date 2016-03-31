@@ -21,6 +21,9 @@
 #define PHASE_REFLEXION 1
 #define PHASE_ENCHERE 2
 #define PHASE_RESOLUTION 3
+#define TEMPS_REFLEXION 20
+#define TEMPS_ENCHERE 5
+#define TEMPS_RESOLUTION 30
 
 /* Gère les timers pour les phases */
 void* thread_timer(void *arg){
@@ -61,7 +64,7 @@ void *thread_resolution(void *arg){
   trop_long = 0;
   pthread_mutex_unlock(&mutex_trop_long);  
   
-  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 15) != 0){
+  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) TEMPS_RESOLUTION) != 0){
     perror("pthread_create thread_timer in thread_resolution");
     return EXIT_FAILURE;
   }
@@ -83,7 +86,7 @@ void* thread_enchere(void *arg){
   
   set_phase("enchere");
 
-  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 10) != 0){
+  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) TEMPS_ENCHERE) != 0){
     perror("pthread_create thread_timer in thread_enchere");
     return EXIT_FAILURE;
   }
@@ -116,7 +119,7 @@ void* thread_reflexion(void *arg){
   set_phase("reflexion");
   tour(enigme);
   
-  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 10) != 0){
+  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) TEMPS_REFLEXION) != 0){
     perror("pthread_create thread_timer in thread_reflexion");
     return EXIT_FAILURE;
   }
@@ -221,7 +224,7 @@ void* thread_reception(void *arg){
 
     /* SEND */
     else if(strcmp(cmd, "SEND") == 0){
-      
+      traitement_chat(user, coups);
     }
 
     /*printf("Listes : \n");

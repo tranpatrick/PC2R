@@ -1,6 +1,6 @@
 SERVEUR
 
-utiliser variable globale pour les delais
+FAIT  --->  utiliser variable globale pour les delais 
 
 Meilleure gestion des listes utilisateurs (file d'attente etc)
 
@@ -14,7 +14,9 @@ Fix des conflits ( encheres envoyes en meme temps ou trouve )
 
 relance de la thread resolution si la solution founie n'est pas bonne
 
-calcul du score et mise a jour du bilan
+resoudre probleme proposition = -1 dans traitement_solution
+
+calcul du score et mise a jour du bilan 
 
 tester la deconnexion + arret session score objectif ou nombre de joueurs <= 1
 
@@ -23,16 +25,17 @@ tester le client avec 3 ou 4 client
 
 CLIENT
 rajouter timer ? 
-Afficher le nom du joueur qqpart
+FAIT  --->  Afficher le nom du joueur qqpart
 fix l'affichage de la meilleure enchere actuelle
 faire attention quand on envoie un message a la toute fin d'une phase (mutex sur phase ?)
-Faire en sorte que l'animation d'une solution dure toujours 20seconde pour eviter attente inutile
+FAIT  --->  Faire en sorte que l'animation d'une solution dure toujours 15 secondes pour eviter attente inutile
 Fix solution non valide lorsque je spam le clavier
+ajouter handler pour soumettre solution/nb coups avec ENTREE
 
 Extension
 
-CHAT a ajouter cote serveur easy
+FAIT  --->  CHAT a ajouter cote serveur
 JOURNAL si on a le temps
 PERSISTANCE possible
 EXTENSION DU PLATEAU : faisable mais chiant
-CLIENT AUTONOME fait, mais client idiot, il ne sait pas trouver une bonne solution
+FAIT  --->  CLIENT AUTONOME fait, mais client idiot, il ne sait pas trouver une bonne solution
