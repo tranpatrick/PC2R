@@ -49,6 +49,16 @@ void* thread_timer(void *arg){
   pthread_exit(NULL);
 }
 
+/* Gère la phase de résolution */
+void *thread_resolution(void *arg){
+  printf("PHASE DE REOSLUTION\n\n");
+
+  set_phase("resolution");
+
+  
+  
+}
+
 /* Gère la phase d'enchere */
 void* thread_enchere(void *arg){
   printf("PHASE D'ENCHERE\n\n");
@@ -105,7 +115,7 @@ void* thread_reflexion(void *arg){
 void* thread_reception(void *arg){
   int sock_com = (int) arg;
   int nb_lus, nb_clients;
-  char cmd[20], user[MAX_SIZE], coups[20];
+  char cmd[20], user[MAX_SIZE], coups[200];
   int coups_int;
   char buffer[MAX_SIZE];
   while((nb_lus = read(sock_com, &buffer, MAX_SIZE)) > 0){
@@ -153,7 +163,10 @@ void* thread_reception(void *arg){
 
     /* SOLUTION */
     else if(strcmp(cmd, "SOLUTION") == 0){
-      tuastrouve(user, coups_int);
+      if(get_phase() == PHASE_REFLEXION)
+	tuastrouve(user, coups_int);
+      else
+	sasolution(user, coups);
     }
 
     /* ENCHERE */
@@ -163,7 +176,7 @@ void* thread_reception(void *arg){
 
  
 
-    /*    printf("Listes : \n");
+    /*printf("Listes : \n");
     pthread_mutex_lock(&mutex_attente);
     print_client_list(file_attente);
     pthread_mutex_unlock(&mutex_attente);

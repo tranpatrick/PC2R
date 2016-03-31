@@ -9,12 +9,13 @@ extern client_list *clients; /* Liste des clients connectés */
 extern client_list *file_attente; /* Liste des clients en attente d'un nouveau tour */
 extern int num_tour; /* numero de tour courant */
 extern int min_enchere; /* enchere minimum */
-extern client_list *liste_encherisseurs; /* joueur qui a le moins de coups */
 extern const char *plateau; /* plateau de jeu */
 extern const char *enigme; /* disposition des pions */
 extern pthread_t tid_phase; /* tid de la thread qui gère la phase courante */
 extern pthread_t tid_timer; /* tid de la thread qui gère le timer courant */
 extern int joueur_solution; /* booleen pour savoir si un joueur a émis une solution */
+extern client_list *joueur_actif; /* le joueur qui doit proposer sa solution */
+
 
 extern pthread_mutex_t mutex_clients;
 extern pthread_mutex_t mutex_attente;
@@ -23,6 +24,7 @@ extern pthread_mutex_t mutex_tour;
 extern pthread_mutex_t mutex_phase;
 extern pthread_mutex_t mutex_min_enchere;
 extern pthread_mutex_t mutex_joueur_solution;
+extern pthread_mutex_t mutex_joueur_actif;
 
 extern pthread_mutex_t mutex_cond_reflexion;
 extern pthread_mutex_t mutex_cond_enchere;
@@ -39,6 +41,9 @@ void set_phase(char *phase);
 
 /* Permet d'obtenir la phase actuelle du jeu */
 int get_phase();
+
+/* permet de mettre à jour le joueur actif pour la phase de résolution */
+void update_joueur_actif();
 
 /* validation de la connexion d'un utilisateur */
 void bienvenue(char *name, int sock_com);
@@ -86,6 +91,9 @@ void finenchere();
 
 /* signalement aux clients de la solution proposée */
 void sasolution(client_list *l, char *solution);
+
+/* verification de la solution */
+void traitement_solution(char *solution);
 
 /* notification de solution acceptée à tous les clients */
 void bonne(client_list *l);
