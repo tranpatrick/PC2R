@@ -15,7 +15,7 @@ extern pthread_t tid_phase; /* tid de la thread qui gère la phase courante */
 extern pthread_t tid_timer; /* tid de la thread qui gère le timer courant */
 extern int joueur_solution; /* booleen pour savoir si un joueur a émis une solution */
 extern client_list *joueur_actif; /* le joueur qui doit proposer sa solution */
-
+extern int trop_long;  /* permet de savoir si l'utilisateur qui a émit la solution, l'a émis à temps */
 
 extern pthread_mutex_t mutex_clients;
 extern pthread_mutex_t mutex_attente;
@@ -25,6 +25,7 @@ extern pthread_mutex_t mutex_phase;
 extern pthread_mutex_t mutex_min_enchere;
 extern pthread_mutex_t mutex_joueur_solution;
 extern pthread_mutex_t mutex_joueur_actif;
+extern pthread_mutex_t mutex_trop_long;
 
 extern pthread_mutex_t mutex_cond_reflexion;
 extern pthread_mutex_t mutex_cond_enchere;
@@ -90,21 +91,21 @@ void nouvelleenchere(char *user, int coups);
 void finenchere();
 
 /* signalement aux clients de la solution proposée */
-void sasolution(client_list *l, char *solution);
+void sasolution(char *user, char *solution);
+
+/* notification de solution acceptée à tous les clients */
+void bonne();
+
+/* notification de solution refusée à tous les clients */
+void mauvaise();
 
 /* verification de la solution */
 void traitement_solution(char *solution);
 
-/* notification de solution acceptée à tous les clients */
-void bonne(client_list *l);
-
-/* notification de solution refusée à tous les clients */
-void mauvaise(client_list *l);
-
 /* plus de joueurs ayant proposé une solution restant, fin du tour */
-void finreso(client_list *l);
+void finreso();
 
 /* temps depasse, nouvelle phase de resolution (joueur suivant), affichage du joueur actif */
-void troplong(client_list *l, char *name);
+void troplong();
 
 #endif

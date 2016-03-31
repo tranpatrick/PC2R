@@ -6,6 +6,7 @@
 #include <signal.h>
 #include "../include/funcserver.h"
 #include "../include/clientlist.h"
+#include "../include/board.h"
 
 #define MAX_SIZE 512
 
@@ -22,6 +23,7 @@ pthread_mutex_t mutex_tour = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_phase = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_joueur_solution = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_joueur_actif = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_trop_long = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t mutex_cond_reflexion = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_cond_enchere = PTHREAD_MUTEX_INITIALIZER;
@@ -39,6 +41,7 @@ int num_tour;
 /*int min_enchere;*/
 /*client_list *liste_encherisseurs = NULL;*/
 int joueur_solution;
+int trop_long;
 
 /* plateau par défaut pour l'instant */
 const char *plateau = 
@@ -470,6 +473,12 @@ void finenchere(){
 
 /* signalement aux clients de la solution proposée */
 void sasolution(char *user, char *solution){
+
+  /* Envoi du signal pour dire que la solution a été émise */
+  pthread_mutex_lock(&mutex_cond_resolution);
+  pthread_cond_signal(&cond_resolution);
+  pthread_mutex_unlock(&mutex_cond_resolution);
+  
   char buffer[MAX_SIZE];
   client_list *aux = clients;
   pthread_mutex_lock(&mutex_joueur_actif);
@@ -482,15 +491,11 @@ void sasolution(char *user, char *solution){
     }
     pthread_mutex_unlock(&mutex_clients);
   }
-  pthread_mutex_unlock(&mutex_joueur_actif);    
-}
+  pthread_mutex_unlock(&mutex_joueur_actif);
 
-/* verification de la solution */
-void traitement_solution(char *solution){
-
-
-  /* Mise à jour du joueur actif */
-  update_joueur_actif();
+  /* traitement de la solution */
+  traitement_solution(solution);
+  
 }
 
 /* notification de solution acceptée à tous les clients */
@@ -507,9 +512,15 @@ void bonne(){
 }
 
 /* notification de solution refusée à tous les clients */
-void mauvaise(client_list *l){
+void mauvaise(){
   char buffer[MAX_SIZE];
-  sprintf(buffer, "MAUVAISE/\n");
+
+  pthread_mutex_lock(&mutex_joueur_actif);
+  char *tmp_name = joueur_actif->name;
+  pthread_mutex_unlock(&mutex_joueur_actif);
+  
+  sprintf(buffer, "MAUVAISE/%s/\n", tmp_name);
+  
   client_list *aux = clients;
   pthread_mutex_lock(&mutex_clients);
   while(aux != NULL){
@@ -519,10 +530,51 @@ void mauvaise(client_list *l){
   pthread_mutex_unlock(&mutex_clients);
 }
 
+/* verification de la solution */
+void traitement_solution(char *solution){
+  char *tmp_name;
+  pthread_mutex_lock(&mutex_joueur_actif);
+  tmp_name = joueur_actif->name;
+
+  update_joueur_actif();
+
+  /* Mise à jour du joueur actif */
+  pthread_mutex_unlock(&mutex_joueur_actif);
+  
+  if(simulation(plateau, enigme, solution) == 1){
+    sleep(30);
+    bonne();
+  }else{
+    sleep(30);
+    pthread_mutex_lock(&mutex_joueur_actif);
+    if(joueur_actif == NULL)
+      finreso();
+    else{
+      pthread_mutex_unlock(&mutex_joueur_actif);
+      mauvaise();
+    }
+    pthread_mutex_unlock(&mutex_joueur_actif);
+  }
+}
+
 /* plus de joueurs ayant proposé une solution restant, fin du tour */
-void finreso(client_list *l){return;}
+void finreso(){
+  client_list *l = clients;
+  char buffer[MAX_SIZE];
+  sprintf(buffer, "FINRESO/\n");
+  pthread_mutex_lock(&mutex_clients);
+  while(l != NULL){
+    write(l->socket, buffer, strlen(buffer));
+    l = l->next;
+  }
+  pthread_mutex_unlock(&mutex_clients);
+}
 
 /* temps depasse, nouvelle phase de resolution (joueur suivant), affichage du joueur actif */
-void troplong(client_list *l, char *name){
-  return;
+void troplong(){
+  char buffer[MAX_SIZE];
+  pthread_mutex_lock(&mutex_joueur_actif);
+  char *tmp_name = joueur_actif->name;
+  pthread_mutex_unlock(&mutex_joueur_actif);
+  sprintf(buffer, "TROPLONG/%s/\n", tmp_name);
 }

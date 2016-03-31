@@ -39,6 +39,10 @@ void* thread_timer(void *arg){
     pthread_mutex_unlock(&mutex_cond_enchere);
     break;
   case PHASE_RESOLUTION:
+    pthread_mutex_lock(&mutex_trop_long);
+    trop_long = 1;
+    pthread_mutex_unlock(&mutex_trop_long);  
+
     pthread_mutex_lock(&mutex_cond_resolution);
     pthread_cond_signal(&cond_resolution);
     pthread_mutex_unlock(&mutex_cond_resolution);
@@ -51,12 +55,26 @@ void* thread_timer(void *arg){
 
 /* Gère la phase de résolution */
 void *thread_resolution(void *arg){
-  printf("PHASE DE REOSLUTION\n\n");
+  char *sol = (char*) arg;
 
-  set_phase("resolution");
+  pthread_mutex_lock(&mutex_trop_long);
+  trop_long = 0;
+  pthread_mutex_unlock(&mutex_trop_long);  
+  
+  if(pthread_create(&tid_timer, NULL, thread_timer, (void *) 60) != 0){
+    perror("pthread_create thread_timer in thread_resolution");
+    return EXIT_FAILURE;
+  }
+  pthread_mutex_lock(&mutex_cond_resolution);
+  pthread_cond_wait(&cond_resolution, &mutex_cond_resolution);
+  pthread_mutex_unlock(&mutex_cond_resolution);
 
-  
-  
+  pthread_mutex_lock(&mutex_trop_long);  
+  if(trop_long == 1)
+    troplong();
+  pthread_mutex_unlock(&mutex_trop_long);
+
+  pthread_exit(NULL);
 }
 
 /* Gère la phase d'enchere */
@@ -75,6 +93,11 @@ void* thread_enchere(void *arg){
 
   /* Fin de la phase d'enchere */
   finenchere();
+
+  /* Initiaion de la phase de résolution */
+  set_phase("resolution");
+  printf("PHASE DE RESOLUTION\n\n");
+
 }
 
 /* Gère la phase de réflexion */
@@ -165,8 +188,16 @@ void* thread_reception(void *arg){
     else if(strcmp(cmd, "SOLUTION") == 0){
       if(get_phase() == PHASE_REFLEXION)
 	tuastrouve(user, coups_int);
-      else
+      else{
 	sasolution(user, coups);
+	/* création de la thread de résolution */
+	pthread_mutex_lock(&mutex_phase);
+	if(pthread_create(&tid_phase, NULL, thread_resolution, NULL) != 0){
+	  perror("pthread_create thread_resolution");
+	  return EXIT_FAILURE;
+	}
+	pthread_mutex_unlock(&mutex_phase);
+      }
     }
 
     /* ENCHERE */
@@ -174,7 +205,10 @@ void* thread_reception(void *arg){
       traitement_enchere(user, coups_int);
     }
 
- 
+    /* SEND */
+    else if(strcmp(cmd, "SEND") == 0){
+      
+    }
 
     /*printf("Listes : \n");
     pthread_mutex_lock(&mutex_attente);
