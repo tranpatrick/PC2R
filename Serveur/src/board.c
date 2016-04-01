@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../include/board.h"
-
+#include "../include/funcserver.h"
 
 square* create_square(){
   square *res = (square*) malloc(sizeof(square));
@@ -96,7 +96,11 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
   char couleur, direction;
   int i = 0;
   int xr, yr, xb, yb, xj, yj, xv, yv, xc, yc, color;
-
+  
+  pthread_mutex_lock(&mutex_compteur_coups);
+  compteur_coups = 0;
+  pthread_mutex_unlock(&mutex_compteur_coups);
+  
   board *plateau = create_board(desc_plateau, enigme);
   xc = plateau->xc;
   yc = plateau->yc;
@@ -110,6 +114,9 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
   yv = plateau->yv;
   while(solution[i] != '\0'){
     if(i%2 != 0){
+      pthread_mutex_lock(&mutex_compteur_coups);
+      compteur_coups++;
+      pthread_mutex_unlock(&mutex_compteur_coups);
       direction = solution[i];
       
       /* Déplacement du robot */
@@ -335,9 +342,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
 	break;
       default:
 	break;
-      }
-
-    
+      }    
     }else{
       couleur = solution[i];
     }

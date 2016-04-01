@@ -10,12 +10,12 @@ SRC=src/
 
 H=$(INCLUDE)clientlist.h $(INCLUDE)funcserver.h
 
-all: $(BIN)test $(BIN)server
+all: $(BIN)main
 
 ##test: test.c clientlist.o
 
 #$(BIN)%: $(SRC)%.c $(OBJ)clientlist.o
-$(BIN)%: $(OBJ)%.o $(OBJ)funcserver.o $(OBJ)clientlist.o $(OBJ)board.o
+$(BIN)%: $(OBJ)%.o $(OBJ)funcserver.o $(OBJ)clientlist.o $(OBJ)board.o $(OBJ)server.o
 	@if [ -d $(BIN) ]; then : ; else mkdir $(BIN); fi
 	$(CC) $(LFLAGS) -o $@ $^
 

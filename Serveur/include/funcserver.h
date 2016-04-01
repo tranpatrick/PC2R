@@ -26,6 +26,7 @@ extern pthread_mutex_t mutex_min_enchere;
 extern pthread_mutex_t mutex_joueur_solution;
 extern pthread_mutex_t mutex_joueur_actif;
 extern pthread_mutex_t mutex_trop_long;
+extern pthread_mutex_t mutex_conflit; /* évite de traiter deux solutions ou enchere en même temps */
 
 extern pthread_mutex_t mutex_cond_reflexion;
 extern pthread_mutex_t mutex_cond_enchere;

@@ -10,20 +10,19 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h>
+#include "../include/server.h"
 #include "../include/clientlist.h"
 #include "../include/funcserver.h"
 
 #define MAX_SIZE 256
-#define MAX_CO 100
-#define PORT 2016
 
 #define PHASE_NULL -1
 #define PHASE_REFLEXION 1
 #define PHASE_ENCHERE 2
 #define PHASE_RESOLUTION 3
-#define TEMPS_REFLEXION 20
-#define TEMPS_ENCHERE 5
-#define TEMPS_RESOLUTION 30
+#define TEMPS_REFLEXION 30
+#define TEMPS_ENCHERE 10
+#define TEMPS_RESOLUTION 20
 
 /* Gère les timers pour les phases */
 void* thread_timer(void *arg){
@@ -60,6 +59,8 @@ void* thread_timer(void *arg){
 void *thread_resolution(void *arg){
   char *sol = (char*) arg;
 
+  printf("PHASE DE RESOLUTION\n\n");
+    
   pthread_mutex_lock(&mutex_trop_long);
   trop_long = 0;
   pthread_mutex_unlock(&mutex_trop_long);  
@@ -77,6 +78,7 @@ void *thread_resolution(void *arg){
     troplong();
   pthread_mutex_unlock(&mutex_trop_long);
   printf("FIN THREAD_RESOLUTION\n");
+  
   pthread_exit(NULL);
 }
 
@@ -97,16 +99,18 @@ void* thread_enchere(void *arg){
   /* Fin de la phase d'enchere */
   finenchere();
 
-  /* Initiaion de la phase de résolution */
-  
+  /* Initiaion de la phase de résolution */  
   pthread_mutex_lock(&mutex_phase);
   set_phase("resolution");
+
+  /* Mise à jour du joueur actif */
+  update_joueur_actif();
+  
   if(pthread_create(&tid_phase, NULL, thread_resolution, NULL) != 0){
     perror("pthread_create thread_resolution");
     return EXIT_FAILURE;
   }
-  pthread_mutex_unlock(&mutex_phase);
-  printf("PHASE DE RESOLUTION\n\n");
+  pthread_mutex_unlock(&mutex_phase);;
 
 }
 
@@ -196,9 +200,11 @@ void* thread_reception(void *arg){
 
     /* SOLUTION */
     else if(strcmp(cmd, "SOLUTION") == 0){
-      if(get_phase() == PHASE_REFLEXION)
+      if(get_phase() == PHASE_REFLEXION){
+	pthread_mutex_lock(&mutex_conflit);
 	tuastrouve(user, coups_int);
-      else{
+	pthread_mutex_unlock(&mutex_conflit);
+      }else{
 	pthread_cancel(tid_timer);
 	pthread_mutex_lock(&mutex_trop_long);
 	trop_long = 0;
@@ -219,7 +225,9 @@ void* thread_reception(void *arg){
 
     /* ENCHERE */
     else if(strcmp(cmd, "ENCHERE") == 0){
+      pthread_mutex_lock(&mutex_conflit);
       traitement_enchere(user, coups_int);
+      pthread_mutex_unlock(&mutex_conflit);
     }
 
     /* SEND */
@@ -266,65 +274,3 @@ void* client_thread(void *arg){
   pthread_exit((void*) 0);
 }
 
-int main(){
-  int sock_connexion, sock_com;
-  pthread_t tid;
-  
-  struct sockaddr_in sin; /* Nom de la socket de connexion */
-  struct sockaddr_in exp; /* Nom de la socket de communication pour un client */
-
-  int fromlen = sizeof(exp);
-
-  /* Liste de clients vide */
-  /*  clients = NULL;
-  file_attente = NULL;*/
-
-  /* Phase est nulle */
-  set_phase("nulle");
-  
-  /* Création de la socket */
-  if((sock_connexion = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-    perror("socket");
-    return EXIT_FAILURE;
-  }
-
-  /* Initialisation de la variable sin */
-  memset((char *) &sin, 0, sizeof(sin));
-  sin.sin_addr.s_addr = htonl(INADDR_ANY); /* INADDR_ANY = machine locale */
-  sin.sin_port = htons(PORT);
-  sin.sin_family = AF_INET;
-
-  /* Pour réutiliser le port et l'adresse */
-  if(setsockopt(sock_connexion, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
-    perror("setsockopt");
-  
-  /* Nommage */
-  if(bind(sock_connexion, (struct sockaddr*) &sin, sizeof(sin)) < 0){
-    perror("bind");
-    return EXIT_FAILURE;
-  }
-
-  /* Le serveur est pret à attendre */
-  listen(sock_connexion, MAX_CO);
-
-  for(;;){
-    printf("Waiting for players to connect ...\n");
-    
-    /* Connexion d'un client */
-    if((sock_com = accept(sock_connexion, (struct sockaddr*) &exp, (socklen_t*) &fromlen)) == -1){
-      perror("accept");
-      return EXIT_FAILURE;
-    }
-    
-    /* Création d'une thread qui va gérer le client */  
-    if(pthread_create(&tid, NULL, client_thread, (void *) sock_com) != 0){
-      perror("pthread_create");
-      return EXIT_FAILURE;
-    }
-    
-  }
-
-  
-
-  return 0;
-}

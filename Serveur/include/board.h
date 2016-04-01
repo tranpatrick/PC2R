@@ -1,6 +1,11 @@
 #ifndef _BOARD_H_
 #define _BOARD_H_
 
+#include <pthread.h>
+
+extern int compteur_coups;
+extern pthread_mutex_t mutex_compteur_coups;
+
 typedef struct square{
   int top_wall;
   int left_wall;
