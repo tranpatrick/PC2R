@@ -7,21 +7,21 @@ SERVEUR
 
 FAIT  --->  utiliser variable globale pour les delais 
 
-Meilleure gestion des listes utilisateurs (file d'attente etc)
+FAIT NORMALEMENT A TESTER ---> Meilleure gestion des listes utilisateurs (file d'attente etc)
+
+FAIT ---> Fix des conflits ( encheres envoyes en meme temps ou trouve )
+
+FAIT ---> relance de la thread resolution si la solution founie n'est pas bonne
+
+FAIT ---> resoudre probleme proposition = -1 dans traitement_solution C'EST NORMAL ICI 
+
+FAIT ---> calcul du score et mise a jour du bilan 
 
 Meilleure gestion de la connexion en cours de partie, 2 choix
-	  - on envoie solution, mais pas tour, on attend le tour suivant
+	  - on envoie solution (session ?), mais pas tour, on attend le tour suivant
 	  - on n'envoie rien on attend le tour suivant
 
 creer Generateur d'enigme aleatoire
-
-Fix des conflits ( encheres envoyes en meme temps ou trouve )
-
-relance de la thread resolution si la solution founie n'est pas bonne
-
-resoudre probleme proposition = -1 dans traitement_solution
-
-calcul du score et mise a jour du bilan 
 
 tester la deconnexion + arret session score objectif ou nombre de joueurs <= 1
 
