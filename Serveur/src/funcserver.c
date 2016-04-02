@@ -60,6 +60,9 @@ pthread_t tid_timer;
 
 /* Permet d'obtenir le bilan de la partie en cours */
 char* bilan(){
+
+  printf("DEBUT BILAN\n");
+
   char *buffer = (char*) malloc(MAX_SIZE*sizeof(char));
   char tmp[MAX_SIZE];
   pthread_mutex_lock(&mutex_tour);
@@ -67,14 +70,20 @@ char* bilan(){
   sprintf(buffer, "%d", num_tour);
   pthread_mutex_unlock(&mutex_tour);
 
+  printf("1\n");
+
   pthread_mutex_lock(&mutex_clients);
   while(aux != NULL){
     memset(tmp, '\0', MAX_SIZE);
+    printf("while.1\n");
     sprintf(tmp, "(%s,%d)", aux->name, aux->score); 
+    printf("while.2\n");
     strcat(buffer, tmp);
     aux = aux->next;
   }
   pthread_mutex_unlock(&mutex_clients);
+
+  printf("FIN BILAN\n");
 
   return buffer;
 }
@@ -117,7 +126,11 @@ void update_joueur_actif(){
     aux = aux->next;
   }
   pthread_mutex_unlock(&mutex_clients);
+
+  printf("ABLABALBA\n");
+
   pthread_mutex_lock(&mutex_joueur_actif);
+  printf("BABLABALBA\n"); 
   joueur_actif = actif;
   pthread_mutex_unlock(&mutex_joueur_actif);
   printf("SORTIE update_joueur_actif\n");
@@ -142,12 +155,12 @@ void bienvenue(char *name, int sock_com){
       /* transfert du client dans la file d'attente vers la liste des clients */
       tmp = get_client(file_attente, name);
       file_attente = suppr_client(file_attente, name);
-      
       tmp->next = clients;
       clients = tmp;
     }
     sprintf(buffer, "BIENVENUE/%s/\n", name);
     write(sock_com, buffer, strlen(buffer));
+    pthread_mutex_unlock(&mutex_clients);
     connecte(name);
     pthread_mutex_unlock(&mutex_attente);
   }
@@ -243,6 +256,12 @@ void sorti(char *name){
   }
 }
 
+void session_attente(char *plateau, int socket){
+  char buffer[MAX_SIZE];
+  sprintf(buffer,"SESSION/%s/\n",plateau);
+  write(socket, buffer, strlen(buffer));
+}
+
 /* annonce de début de session avec envoi du tableau */
 /* ATTENTION ajouter plateau en param */
 void session(char* plateau){
@@ -279,15 +298,27 @@ void vainqueur(char *name){
 /* tour donne le bilan de la session courant (tour courant; (joueur,score)) et l'enigme (position des robots et du point d'arrivé) */
 /* ATTENTION ajouter bilan et enigme en param */
 void tour(char *enigme){
+
+  printf("DEBUT TOUR\n");
+
   client_list *aux = clients;
   char buffer[MAX_SIZE];
   sleep(1);
+  
+  printf("0\n");
+
   /* Incrementation du numero de tour */
   pthread_mutex_lock(&mutex_tour);
   num_tour++;
   pthread_mutex_unlock(&mutex_tour);
   
+  printf("1\n");  
+
+  /* Notification début de tour avec enigme */
   sprintf(buffer, "TOUR/%s/%s/\n", enigme, bilan());
+
+  printf("1.5\n");
+
   pthread_mutex_lock(&mutex_clients);
   while(aux != NULL){
     aux->proposition = -1;
@@ -296,15 +327,14 @@ void tour(char *enigme){
   }
   pthread_mutex_unlock(&mutex_clients);
 
-  /* Reinitialisation du nombre de coup min */
-  /*  pthread_mutex_lock(&mutex_min_enchere);
-  min_enchere = 999;
-  pthread_mutex_unlock(&mutex_min_enchere);*/
+  printf("2\n");
 
   /* Reinitialisation du boolean joueur_solution */
   pthread_mutex_lock(&mutex_joueur_solution);
   joueur_solution = 0;
   pthread_mutex_unlock(&mutex_joueur_solution);
+
+  printf("FIN TOUR\n");
   
 }
 
@@ -470,8 +500,10 @@ void finenchere(){
 
 /* signalement aux clients de la solution proposée */
 void sasolution(char *user, char *solution){
+  printf("DEBUT SASOLUTION\n");
   char buffer[MAX_SIZE];
   client_list *aux = clients;
+  printf("1\n");
   pthread_mutex_lock(&mutex_joueur_actif);
   printf("1\n");
   if (joueur_actif == NULL) {
@@ -513,10 +545,12 @@ void mauvaise(){
   char *tmp_name;
 
   /* Mise à jour du joueur actif */
+  printf("Update_joueur_actif dans mauvaise\n");
   update_joueur_actif();
   
   pthread_mutex_lock(&mutex_joueur_actif);  
   if(joueur_actif == NULL){
+    pthread_mutex_unlock(&mutex_joueur_actif);
     finreso();
     return;
   }else{
@@ -596,6 +630,11 @@ nouveautour(){
   pthread_mutex_lock(&mutex_attente);
   client_list *att = file_attente;
   client_list *tmp;
+
+  printf("Nbre de clients dans file_attente: %d\n", client_list_length(file_attente));
+
+  /* Attention fait liste circulaire au 2e appel de cette fonction */
+
   while(att != NULL && att->next != NULL){
     if(att->next->name != NULL){
       tmp = att->next;
@@ -610,6 +649,12 @@ nouveautour(){
     att->next = clients;
     clients = att;
   }
+  
+
+  printf("Nbre de clients: %d\n", client_list_length(clients));
+
+  print_client_list(clients);
+
   pthread_mutex_unlock(&mutex_attente);
   pthread_mutex_unlock(&mutex_clients);
 
@@ -619,6 +664,9 @@ nouveautour(){
     perror("pthread_create thread_reflexion");
     return EXIT_FAILURE;
   }
+
+  printf("HELLO\n");
+
   pthread_mutex_unlock(&mutex_phase);
 
   printf("FIN NOUVEAUTOUR\n");
@@ -653,10 +701,12 @@ void troplong(){
   pthread_mutex_lock(&mutex_joueur_actif);
   joueur_actif->proposition = -1;
   pthread_mutex_unlock(&mutex_joueur_actif);
+  printf("Update_joueur_actif dans troplong\n");
   update_joueur_actif();
   
   pthread_mutex_lock(&mutex_joueur_actif);
   if(joueur_actif == NULL){
+    pthread_mutex_unlock(&mutex_joueur_actif);
     finreso();
     return;
   }else{
@@ -672,12 +722,12 @@ void troplong(){
   pthread_mutex_unlock(&mutex_clients);
 
   /* Lancement d'une nouvelle phase de resolution */
-    pthread_mutex_lock(&mutex_phase);
+  pthread_mutex_lock(&mutex_phase);
   if(pthread_create(&tid_phase, NULL, thread_resolution, (void *) NULL) != 0){
     perror("pthread_create thread_resolution in thread_resolution");
     return EXIT_FAILURE;
   }
-    pthread_mutex_unlock(&mutex_phase);
+  pthread_mutex_unlock(&mutex_phase);
     
   printf("FIN troplong()\n");
 }

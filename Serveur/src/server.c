@@ -21,8 +21,8 @@
 #define PHASE_ENCHERE 2
 #define PHASE_RESOLUTION 3
 #define TEMPS_REFLEXION 30
-#define TEMPS_ENCHERE 10
-#define TEMPS_RESOLUTION 20
+#define TEMPS_ENCHERE 5
+#define TEMPS_RESOLUTION 10
 
 /* Gère les timers pour les phases */
 void* thread_timer(void *arg){
@@ -73,6 +73,8 @@ void *thread_resolution(void *arg){
   pthread_cond_wait(&cond_resolution, &mutex_cond_resolution);
   pthread_mutex_unlock(&mutex_cond_resolution);
 
+  pthread_cancel(tid_timer);
+
   pthread_mutex_lock(&mutex_trop_long);  
   if(trop_long == 1)
     troplong();
@@ -96,6 +98,8 @@ void* thread_enchere(void *arg){
   pthread_cond_wait(&cond_enchere, &mutex_cond_enchere);
   pthread_mutex_unlock(&mutex_cond_enchere);
 
+  pthread_cancel(tid_timer);
+
   /* Fin de la phase d'enchere */
   finenchere();
 
@@ -104,13 +108,14 @@ void* thread_enchere(void *arg){
   set_phase("resolution");
 
   /* Mise à jour du joueur actif */
+  printf("update_joueur_actif dans thread_enchere (fin)\n");
   update_joueur_actif();
   
   if(pthread_create(&tid_phase, NULL, thread_resolution, NULL) != 0){
     perror("pthread_create thread_resolution");
     return EXIT_FAILURE;
   }
-  pthread_mutex_unlock(&mutex_phase);;
+  pthread_mutex_unlock(&mutex_phase);
 
 }
 
@@ -129,14 +134,17 @@ void* thread_reflexion(void *arg){
   }
   pthread_mutex_lock(&mutex_cond_reflexion);
   pthread_cond_wait(&cond_reflexion, &mutex_cond_reflexion);
-  pthread_mutex_unlock(&mutex_cond_reflexion);
+  pthread_mutex_unlock(&mutex_cond_reflexion); 
 
+  printf("JE PASSE ICI\n");
+  pthread_cancel(tid_timer);
+  printf("JE PASSE LA\n");
   /* Fin de la phase de reflexion */
   pthread_mutex_lock(&mutex_joueur_solution);
   if(joueur_solution == 0)
     finreflexion();
   pthread_mutex_unlock(&mutex_joueur_solution);
-  
+  printf("COUCOU\n");  
   /* Lancement de la phase d'enchere */
   pthread_mutex_lock(&mutex_phase);
   if(pthread_create(&tid_phase, NULL, thread_enchere, (void *) NULL) != 0){
@@ -172,8 +180,9 @@ void* thread_reception(void *arg){
       /* Si le nombre de joueurs est au moins 2, lancer session et timer */
       pthread_mutex_lock(&mutex_clients);
       nb_clients = client_list_length(clients);
+      printf("nb client = %d\n", nb_clients);
       pthread_mutex_unlock(&mutex_clients);
-      if(nb_clients == 2){
+      if(nb_clients == 2 && get_phase() == -1){
 	session(plateau);
 	/* Création d'une thread qui va gérer la phase de reflexion */
 	pthread_mutex_lock(&mutex_phase);
@@ -182,6 +191,8 @@ void* thread_reception(void *arg){
 	  return EXIT_FAILURE;
 	}
 	pthread_mutex_unlock(&mutex_phase);
+      }else if(get_phase() != -1){
+	session_attente(plateau, sock_com);
       }
     }
 
@@ -213,12 +224,9 @@ void* thread_reception(void *arg){
 	pthread_cond_signal(&cond_resolution);
 	pthread_mutex_unlock(&mutex_cond_resolution);
 
-
-
 	sasolution(user, coups);
 
 	printf("----------hello\n");
-	/* création de la thread de résolution */
 	
       }
     }

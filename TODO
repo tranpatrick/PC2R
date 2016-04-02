@@ -13,7 +13,7 @@ FAIT ---> Fix des conflits ( encheres envoyes en meme temps ou trouve )
 
 FAIT ---> relance de la thread resolution si la solution founie n'est pas bonne
 
-FAIT ---> resoudre probleme proposition = -1 dans traitement_solution C'EST NORMAL ICI 
+FAIT ---> resoudre probleme proposition = -1 dans traitement_solution
 
 FAIT ---> calcul du score et mise a jour du bilan 
 
@@ -27,6 +27,7 @@ tester la deconnexion + arret session score objectif ou nombre de joueurs <= 1
 
 tester le client avec 3 ou 4 client
 
+tester dans le cas où il n'y aurait pas de solution émise dans la phase de REFLEXION 
 
 CLIENT
 rajouter timer ? 
