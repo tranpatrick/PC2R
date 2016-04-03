@@ -23,11 +23,11 @@ Meilleure gestion de la connexion en cours de partie, 2 choix
 
 creer Generateur d'enigme aleatoire
 
-FAIT --- > tester la deconnexion + arret session score objectif ou nombre de joueurs <= 1
+FAIT ---> tester la deconnexion + arret session score objectif ou nombre de joueurs <= 1
 
 tester le client avec 3 ou 4 client
 
-tester dans le cas où il n'y aurait pas de solution émise dans la phase de REFLEXION 
+FAIT ---> tester dans le cas où il n'y aurait pas de solution émise dans la phase de REFLEXION 
 
 CLIENT
 rajouter timer ? 

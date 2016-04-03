@@ -568,6 +568,8 @@ void traitement_solution(char *solution){
     pthread_mutex_lock(&mutex_compteur_coups);   
     if(prop >= compteur_coups)
       tmp->score = tmp->score + 1;
+    else
+      mauvaise();
     pthread_mutex_unlock(&mutex_compteur_coups);    
     
     sleep(TEMPS_AFFICHAGE_SOLUTION);
