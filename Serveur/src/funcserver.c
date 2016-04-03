@@ -17,6 +17,7 @@
 #define PHASE_ENCHERE 2
 #define PHASE_RESOLUTION 3
 #define TEMPS_AFFICHAGE_SOLUTION 8
+#define OBJECTIF 10
 
 pthread_mutex_t mutex_clients = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_attente = PTHREAD_MUTEX_INITIALIZER;
@@ -569,8 +570,14 @@ void bonne(){
   }
   pthread_mutex_unlock(&mutex_clients);
 
-  /* Lancement du nouveau tour */
-  nouveautour();
+  /* Vérification des scores pour voir si le score objectif a été atteint */
+  if(check_score() == 1){
+    vainqueur();
+    nouvellesession();
+  }else{
+    /* Lancement du nouveau tour */
+    nouveautour();
+  }
 
 }
 
@@ -805,6 +812,16 @@ void nouvellesession(){
 }
 
 /* vérifie les scores, si un des scores a atteint le score objectif, fin de la session */
-void check_score(){
-  
+int check_score(){
+  pthread_mutex_lock(&mutex_clients);
+  client_list *aux = clients;
+  while(aux != NULL){
+    if(aux->score == OBJECTIF){
+      pthread_mutex_unlock(&mutex_clients);
+      return 1;
+    }
+    aux = aux->next;
+  }
+  pthread_mutex_unlock(&mutex_clients);
+  return 0;
 }

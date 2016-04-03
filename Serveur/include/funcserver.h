@@ -113,5 +113,6 @@ void troplong();
 void nouvellesession();
 
 /* vérifie les scores, si un des scores a atteint le score objectif, fin de la session */
+int check_score();
 
 #endif

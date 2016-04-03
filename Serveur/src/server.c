@@ -80,7 +80,7 @@ void *thread_resolution(void *arg){
     troplong();
   pthread_mutex_unlock(&mutex_trop_long);
   printf("FIN THREAD_RESOLUTION\n");
-  
+
   pthread_exit(NULL);
 }
 
@@ -198,10 +198,9 @@ void* thread_reception(void *arg){
       pthread_mutex_unlock(&mutex_clients);
       if(nb_clients == 1){
         vainqueur();
+	/* Relance d'une session si la liste d'attente est non vide */
+	nouvellesession();
       }
-
-      /* Relance d'une session si la liste d'attente est non vide */
-      nouvellesession();
 
       pthread_exit(NULL);
     }
