@@ -17,7 +17,7 @@
 #define PHASE_REFLEXION 1
 #define PHASE_ENCHERE 2
 #define PHASE_RESOLUTION 3
-#define TEMPS_AFFICHAGE_SOLUTION 15
+#define TEMPS_AFFICHAGE_SOLUTION 8
 #define OBJECTIF 10
 
 pthread_mutex_t mutex_clients = PTHREAD_MUTEX_INITIALIZER;
@@ -54,7 +54,7 @@ int compteur_coups = 0;
 char *plateau = 
   "(0,3,D)(0,11,D)(1,13,G)(1,13,H)(2,5,D)(2,5,B)(2,9,D)(2,9,B)(4,0,B)(4,2,D)(4,2,H)(4,15,H)(5,7,G)(5,7,B)(5,14,G)(5,14,B)(6,1,G)(6,1,H)(6,7,B)(6,8,B)(6,11,H)(6,11,D)(7,6,D)(7,9,G)(8,5,H)(8,5,D)(8,6,D)(8,9,G)(9,1,B)(9,1,D)(9,12,H)(9,12,D)(10,4,G)(10,4,B)(10,15,H)(12,0,H)(12,9,G)(12,9,H)(13,5,H)(13,5,D)(13,14,G)(13,14,B)(14,3,G)(14,3,H)(14,11,D)(14,11,B)(15,6,D)(15,13,D)(8,7,B)(8,8,B)";
 /* enigme temporaire */
-char *enigme ;/* = "(13,5,9,12,6,1,5,14,8,5,R)";  */
+char *enigme = NULL; /*"(13,5,9,12,6,1,5,14,8,5,R)";  */
 
 
 pthread_t tid_phase;
@@ -262,7 +262,7 @@ void session(char* plateau){
   pthread_mutex_unlock(&mutex_tour);  
 
   /* Lancement du premier tour */
-  enigme = genererate_random_enigme();
+
   tour();
 }
 
@@ -298,13 +298,19 @@ void tour(){
   num_tour++;
   pthread_mutex_unlock(&mutex_tour);
   
-  char * enigmeTMP = genererate_random_enigme();
+  /* char * enigmeTMP = genererate_random_enigme();
   memset(enigme, '\0', 40);
   sprintf(enigme, "%s", enigmeTMP);
-
   
-  printf("[funcserver.c] %s\n", enigme);
+  
+  
+  printf("[funcserver.c] %s\n", enigme); */
   /* Notification début de tour avec enigme */
+  if (enigme != NULL) {
+    free(enigme);
+  }
+  enigme = strdup(genererate_random_enigme());
+
   sprintf(buffer, "TOUR/%s/%s/\n", enigme, bilan());
 
   /* Remise à -1 de toutes les propositions d'enchères */

@@ -2,18 +2,58 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-
+#include "../include/board.h"
+#include "../include/funcserver.h"
 
 int cibles[16][16];
+int pos[16][16];
 
 void init_matrice() {
+
   printf("DEBUT init_matrice\n");
   int i, j;
   for (i = 0; i < 16; i++) {
     for (j = 0; j < 16; j++) {
       cibles[i][j] = 0;
+      pos[i][j] = 0;
     }
   }
+ 
+  pos[7][7] = 1;
+  pos[7][8] = 1;
+  pos[8][7] = 1;
+  pos[8][8] = 1;
+  /*board *tmp = create_terrain(plateau);
+  if (tmp == NULL)
+    printf("NULLLLL\n");
+ 
+  for (i = 0; i < 16; i++) {
+    for (j = 0; j < 16; j++) {
+      printf("allo\n");
+      if(tmp->tab[i][j]->top_wall == 1){
+	if(tmp->tab[i][j]->left_wall == 1 || tmp->tab[i][j]->right_wall == 1){
+	  cibles[i][j] = 1;
+	}
+      }else if(tmp->tab[i][j]->bottom_wall == 1){
+	if(tmp->tab[i][j]->left_wall == 1 || tmp->tab[i][j]->right_wall == 1){
+	  cibles[i][j] = 1;
+	}
+      }
+    }
+  }
+printf("dsfsdfdsf\n");
+  cibles[7][7] = 0;
+  cibles[7][8] = 0;
+  cibles[8][7] = 0;
+  cibles[8][8] = 0;
+
+  for (i = 0; i < 16; i++) {
+    for (j = 0; j < 16; j++) {
+      if(cibles[i][j] == 1)
+	printf("cibles[%d][%d]\n", i, j);
+    }
+  }
+  */
   cibles[0][0] = 1;
   cibles[0][3] = 1;
   cibles[0][4] = 1;
@@ -49,10 +89,11 @@ void init_matrice() {
   cibles[15][13] = 1;
   cibles[15][15] = 1;
   printf("FIN init_matrice\n");
+
 }
 
 int *get_random_cible() {
-  printf("DEBUT get_random_cible\n");
+
   int *cible = (int*) malloc(2*sizeof(int));
   srand(time(NULL));
   int limite = rand()%34;
@@ -62,7 +103,6 @@ int *get_random_cible() {
       if (cibles[i][j] == 0) 
 	continue;
       else {
-	printf("i = %d, j = %d\n", i, j);
 	cpt++;
       }
       if (cpt == limite)
@@ -71,16 +111,18 @@ int *get_random_cible() {
     if (cpt == limite)
       break;
   }
-   if (i < 16 && i >= 0) 
+  if (i < 16 && i >= 0) 
     cible[0] = i;
   else
-    i = 5;
+    cible[0] = 5;
   if (j < 16 && j >= 0) 
     cible[1] = j;
   else
-    j = 8;
-  printf("[generator.c] get_random_cible : i = %d; j = %d\n", i, j);
-  printf("FIN get_random_cible\n");
+    cible[1] = 7;
+  if (pos[i][j] == 1) {
+    cible[0] = 14;
+    cible[1] = 11;
+  }
   return cible;
 }
 
@@ -92,19 +134,34 @@ char *genererate_random_enigme() {
   int xr, yr ,xb, yb, xj, yj, xv, yv, xc, yc;
   xr = rand()%16;
   yr = rand()%16;
+  while (cibles[xr][yr] == 1 || pos[xr][yr] == 1) {
+    xr = rand()%16;
+  }
+  pos[xr][yr] = 1;
   xb = rand()%16;
   yb = rand()%16;
+  while (cibles[xb][yb] == 1 || pos[xb][yb] == 1) {
+    xb = rand()%16;
+  }
+  pos[xb][yb] = 1;
+
   xj = rand()%16;
   yj = rand()%16;
+  while (cibles[xj][yj] == 1 || pos[xj][yj] == 1) {
+    xj = rand()%16;
+  }
+  pos[xj][yj] = 1;
   xv = rand()%16;
   yv = rand()%16;
+  while (cibles[xv][yv] == 1 || pos[xv][yv] == 1) {
+    xv = rand()%16;
+  }
+  pos[xv][yv] = 1;
   int *cible = get_random_cible();
   xc = cible[0];
   yc = cible[1];
-  printf("[generator.c] genererate : xc = %d; yc = %d\n", xc, yc);
   char *color;
   double alea = rand()%20;
-  printf("alea = %f\n", alea);
   if (alea < 5) {
     color = strdup("R");
   }
@@ -130,5 +187,5 @@ char *genererate_random_enigme() {
   char *enigme = genererate_random_enigme();
   printf("enigme generee : %s\n", enigme);
   free(enigme);
-}
+  }
 */

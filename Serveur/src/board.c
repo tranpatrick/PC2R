@@ -14,6 +14,55 @@ square* create_square(){
   return res;
 }
 
+board* create_terrain(char *plateau){
+  printf("DEBUT create_terrain\n");
+ board *res = (board*) malloc(sizeof(board));
+ int i,j, x,y;
+ char mur;
+ char buffer[10];
+
+ /* Création et initialisation des cases à vide */
+  for(i=0; i<16; i++){
+    for(j=0; j<16; j++){
+      res->tab[i][j] = create_square();
+    }
+  }
+
+  /* Initialisation des murs */
+  i = 0;
+  j = 0; /* j sera l'indice de fin de la chaine buffer */
+  while(plateau[i] != '\0'){
+    if(plateau[i] != ')'){
+      /* ajout du char dans buffer */
+      buffer[j] = plateau[i];
+      j++;
+    }else{
+      sscanf(buffer, "(%d,%d,%c)", &x, &y, &mur);
+      switch(mur){
+      case 'G':
+	res->tab[x][y]->left_wall = 1;
+	break;
+      case 'D':
+	res->tab[x][y]->right_wall = 1;
+	break;
+      case 'H':
+	res->tab[x][y]->top_wall = 1;
+	break;
+      case 'B':
+	res->tab[x][y]->bottom_wall = 1;
+	break;
+      default:
+	break;
+      }
+      memset(buffer, '\0', 10);
+      j = 0;
+    }
+    i++;
+  }
+  printf("FIN create_terrain\n");
+  return res;
+}
+
 board* create_board(char* plateau, char* enigme){
   board *res = (board*) malloc(sizeof(board));
   int i, j, x, y;
@@ -85,10 +134,11 @@ board* create_board(char* plateau, char* enigme){
   res->yc = yc;
   /* Spécifier la couleur du robot à amener sur la cible */
   res->color = color;
-    return res;
+  return res;
 }
 
 int simulation(char *desc_plateau, char *enigme, char *solution){
+  printf("[board.c] DEBUT SIMULATION\n");
   char couleur, direction;
   int i = 0;
   int xr, yr, xb, yb, xj, yj, xv, yv, xc, yc;
@@ -344,32 +394,48 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
     }
     i++;
   }
-
+  printf("[board.c] INTERMEDIAIRE SIMULATION\n");
   /* Déterminer si la solution est bonne */
   switch(plateau->color){
   case 'R':
-    if(xr == xc && yr == yc)
+    if(xr == xc && yr == yc) {
+      printf("[board.c] R - OK -> FIN SIMULATION\n");
       return 1;
-    else
+    }
+    else {
+      printf("[board.c] R - KO -> FIN SIMULATION\n");
       return 0;
+    }
     break;
   case 'B':
-    if(xb == xc && yb == yc)
+    if(xb == xc && yb == yc) {
+      printf("[board.c] B - OK -> FIN SIMULATION\n");
       return 1;
-    else
+    }
+    else {
+      printf("[board.c] B - KO -> FIN SIMULATION\n");
       return 0;
+    }
     break;
   case 'J':
-    if(xj == xc && yj == yc)
+    if(xj == xc && yj == yc) {
+      printf("[board.c] J - OK -> FIN SIMULATION\n");
       return 1;
-    else
+    }
+    else {
+      printf("[board.c] J - KO -> FIN SIMULATION\n");
       return 0;
+    }
     break;
   case 'V':
-    if(xv == xc && yv == yc)
+    if(xv == xc && yv == yc) {
+      printf("[board.c] V - OK -> FIN SIMULATION\n");
       return 1;
-    else
+    }
+    else {
+      printf("[board.c] V - KO -> FIN SIMULATION\n");
       return 0;
+    }
     break;
   default:
     break;
