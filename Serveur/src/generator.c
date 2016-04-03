@@ -2,11 +2,12 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-#include "../include/generator.h"
+
 
 int cibles[16][16];
 
 void init_matrice() {
+  printf("DEBUT init_matrice\n");
   int i, j;
   for (i = 0; i < 16; i++) {
     for (j = 0; j < 16; j++) {
@@ -47,18 +48,21 @@ void init_matrice() {
   cibles[15][14] = 1;
   cibles[15][13] = 1;
   cibles[15][15] = 1;
+  printf("FIN init_matrice\n");
 }
 
 int *get_random_cible() {
+  printf("DEBUT get_random_cible\n");
   int *cible = (int*) malloc(2*sizeof(int));
-  srand(getpid());
-  int limite = rand()%35;
+  srand(time(NULL));
+  int limite = rand()%34;
   int i, j, cpt = 0;
   for(i = 0; i<16; i++) {
     for(j = 0; j<16; j++) {
       if (cibles[i][j] == 0) 
 	continue;
       else {
+	printf("i = %d, j = %d\n", i, j);
 	cpt++;
       }
       if (cpt == limite)
@@ -67,18 +71,23 @@ int *get_random_cible() {
     if (cpt == limite)
       break;
   }
-  if (i < 16 && i >= 0) 
+   if (i < 16 && i >= 0) 
     cible[0] = i;
   else
-    i = 0;
+    i = 5;
   if (j < 16 && j >= 0) 
     cible[1] = j;
   else
-    j = 0;
+    j = 8;
+  printf("[generator.c] get_random_cible : i = %d; j = %d\n", i, j);
+  printf("FIN get_random_cible\n");
   return cible;
 }
 
 char *genererate_random_enigme() {
+
+  printf("DEBUT generate_random_cible\n");
+  init_matrice();
   srand(getpid());
   int xr, yr ,xb, yb, xj, yj, xv, yv, xc, yc;
   xr = rand()%16;
@@ -92,6 +101,7 @@ char *genererate_random_enigme() {
   int *cible = get_random_cible();
   xc = cible[0];
   yc = cible[1];
+  printf("[generator.c] genererate : xc = %d; yc = %d\n", xc, yc);
   char *color;
   double alea = rand()%20;
   printf("alea = %f\n", alea);
@@ -110,6 +120,8 @@ char *genererate_random_enigme() {
   char *enigme = (char*) malloc(40*sizeof(char));
   sprintf(enigme, "(%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s)",
 	  xr, yr, xb, yb, xj, yj, xv, yv, xc, yc, color);
+  printf("[generator.c] generate : %s\n", enigme); 
+  printf("FIN generate_random_cible\n");
   return enigme;
 }
 
