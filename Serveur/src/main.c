@@ -20,6 +20,7 @@
 int main(){
   int sock_connexion, sock_com;
   pthread_t tid;
+  enigme = (char*) malloc(40*sizeof(char));
   
   struct sockaddr_in sin; /* Nom de la socket de connexion */
   struct sockaddr_in exp; /* Nom de la socket de communication pour un client */

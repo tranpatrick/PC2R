@@ -88,7 +88,7 @@ char *genererate_random_enigme() {
 
   printf("DEBUT generate_random_cible\n");
   init_matrice();
-  srand(getpid());
+  srand(time(NULL));
   int xr, yr ,xb, yb, xj, yj, xv, yv, xc, yc;
   xr = rand()%16;
   yr = rand()%16;
