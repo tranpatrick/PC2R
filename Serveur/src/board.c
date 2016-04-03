@@ -15,10 +15,10 @@ square* create_square(){
 }
 
 board* create_board(char* plateau, char* enigme){
-  printf("ENTREE create_board\n");
   board *res = (board*) malloc(sizeof(board));
   int i, j, x, y;
-  int xr, yr, xb, yb, xj, yj, xv, yv, xc, yc, color;
+  int xr, yr, xb, yb, xj, yj, xv, yv, xc, yc;
+  char color;
   char mur;
   char buffer[10];
   
@@ -64,7 +64,6 @@ board* create_board(char* plateau, char* enigme){
   /* Initialisation des positions des robots et de la cible */
   sscanf(enigme, "(%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%c)",
 	 &xr, &yr, &xb, &yb, &xj, &yj, &xv, &yv, &xc, &yc, &color);
-  printf("CIBLE => %d,%d\n", xc, yc);
   res->tab[xr][yr]->robot = 'R';
   res->tab[xb][yb]->robot = 'B';
   res->tab[xj][yj]->robot = 'J';
@@ -84,18 +83,15 @@ board* create_board(char* plateau, char* enigme){
   /* Spécifier la couleur la case cible */
   res->xc = xc;
   res->yc = yc;
-  printf("CIBLE => %d,%d\n", xc, yc);
   /* Spécifier la couleur du robot à amener sur la cible */
   res->color = color;
-  printf("SORTIE create_board\n");
-  return res;
+    return res;
 }
 
 int simulation(char *desc_plateau, char *enigme, char *solution){
-  printf("ENTREE simulation\n");
   char couleur, direction;
   int i = 0;
-  int xr, yr, xb, yb, xj, yj, xv, yv, xc, yc, color;
+  int xr, yr, xb, yb, xj, yj, xv, yv, xc, yc;
   
   pthread_mutex_lock(&mutex_compteur_coups);
   compteur_coups = 0;
@@ -349,11 +345,6 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
     i++;
   }
 
-  printf("rouge = %d,%d\n", xr,yr);
-  printf("bleu = %d,%d\n", xb,yb);
-  printf("jaune = %d,%d\n", xj,yj);
-  printf("vert = %d,%d\n", xv,yv);
-  printf("cible = %d,%d\n", xc,yc);
   /* Déterminer si la solution est bonne */
   switch(plateau->color){
   case 'R':
@@ -383,7 +374,6 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
   default:
     break;
   }
-  printf("SORTIE simulation\n");
   return 0;
   
 }

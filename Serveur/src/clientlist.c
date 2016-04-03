@@ -29,15 +29,6 @@ client_list* get_client(client_list* l, char *name){
   return NULL;
 }
 
-client_list* client_copy(client_list *l){
-  client_list *res = (client_list*) malloc(sizeof(client_list));
-  res->tid = l->tid;
-  res->socket = l->socket;
-  res->score = l->score;
-  res->proposition = l->proposition;
-  res->next = NULL;
-}
-
 client_list* create_client_list(pthread_t tid, int sock, client_list* next){
   client_list *res = (client_list*) malloc(sizeof(client_list));
   res->tid = tid;
@@ -60,7 +51,7 @@ client_list* add_new_client(client_list *l, pthread_t tid, int sock){
 }
 
 client_list* suppr_client(client_list *l, char* name){
-  client_list *res, *aux, *tmp;
+  client_list *aux;
   /* si la liste est vide */
   if(l == NULL){
     /*fprintf(stderr, "suppr_client : tentative de suppression sur une liste vide\n");*/
@@ -94,14 +85,14 @@ client_list* add_name_client(client_list *l, int socket, char *name){
   client_list *aux = l;
   if(aux == NULL){
     fprintf(stderr, "Client list empty.\n");
-    return;
+    return l;
   }
   while(aux->socket != socket){
     aux = aux->next;
   }
   if(aux == NULL){
     fprintf(stderr, "add_name_client: l is NULL\n");
-    return;
+    return l;
   }
   aux->name = (char*) malloc(strlen(name)*sizeof(char));
   strcpy(aux->name, name);

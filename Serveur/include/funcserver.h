@@ -9,8 +9,8 @@ extern client_list *clients; /* Liste des clients connectés */
 extern client_list *file_attente; /* Liste des clients en attente d'un nouveau tour */
 extern int num_tour; /* numero de tour courant */
 extern int min_enchere; /* enchere minimum */
-extern const char *plateau; /* plateau de jeu */
-extern const char *enigme; /* disposition des pions */
+extern char *plateau; /* plateau de jeu */
+extern char *enigme; /* disposition des pions */
 extern pthread_t tid_phase; /* tid de la thread qui gère la phase courante */
 extern pthread_t tid_timer; /* tid de la thread qui gère le timer courant */
 extern int joueur_solution; /* booleen pour savoir si un joueur a émis une solution */
@@ -56,8 +56,10 @@ void connecte(char *name);
 /* notification de déconnexion d'un joueur */
 void sorti(char *name);
 
+/* Envoie du plateau de la session pour les clients en attente */
+void session_attente(char *plateau, int socket);
+
 /* annonce de début de session avec envoi du tableau */
-/* ATTENTION ajouter plateau en param */
 void session(char *plateau);
 
 /* fin de la session courante, et annonce du vainqueur */
@@ -103,11 +105,17 @@ void mauvaise();
 /* verification de la solution */
 void traitement_solution(char *solution);
 
+/* nouveau tour */
+void nouveautour();
+
 /* plus de joueurs ayant proposé une solution restant, fin du tour */
 void finreso();
 
 /* temps depasse, nouvelle phase de resolution (joueur suivant), affichage du joueur actif */
 void troplong();
+
+/* Fonction de traitement des message du chat */
+void traitement_chat(char *user, char *coups);
 
 /* relance une session lorsqu'une session se termine et si les conditions le permettent */
 void nouvellesession();

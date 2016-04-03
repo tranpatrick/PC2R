@@ -20,9 +20,9 @@
 #define PHASE_REFLEXION 1
 #define PHASE_ENCHERE 2
 #define PHASE_RESOLUTION 3
-#define TEMPS_REFLEXION 30
+#define TEMPS_REFLEXION 20
 #define TEMPS_ENCHERE 10
-#define TEMPS_RESOLUTION 45
+#define TEMPS_RESOLUTION 20
 
 /* Gère les timers pour les phases */
 void* thread_timer(void *arg){
@@ -47,8 +47,7 @@ void* thread_timer(void *arg){
     pthread_mutex_lock(&mutex_cond_resolution);
     pthread_cond_signal(&cond_resolution);
     pthread_mutex_unlock(&mutex_cond_resolution);
-    printf("FIN DU TIMER\n");
-    break;
+     break;
   default:
     break;
   }
@@ -57,18 +56,26 @@ void* thread_timer(void *arg){
 
 /* Gère la phase de résolution */
 void *thread_resolution(void *arg){
-  char *sol = (char*) arg;
-
+  client_list *prop;
+  
   printf("PHASE DE RESOLUTION\n\n");
-    
+
+ pthread_mutex_lock(&mutex_joueur_actif);
+ prop = joueur_actif;
+ pthread_mutex_unlock(&mutex_joueur_actif);
+  if(prop == NULL){
+    finreso();
+  }
+
   pthread_mutex_lock(&mutex_trop_long);
   trop_long = 0;
   pthread_mutex_unlock(&mutex_trop_long);  
   
   if(pthread_create(&tid_timer, NULL, thread_timer, (void *) TEMPS_RESOLUTION) != 0){
     perror("pthread_create thread_timer in thread_resolution");
-    return EXIT_FAILURE;
+    exit(1);
   }
+
   pthread_mutex_lock(&mutex_cond_resolution);
   pthread_cond_wait(&cond_resolution, &mutex_cond_resolution);
   pthread_mutex_unlock(&mutex_cond_resolution);
@@ -79,9 +86,8 @@ void *thread_resolution(void *arg){
   if(trop_long == 1)
     troplong();
   pthread_mutex_unlock(&mutex_trop_long);
-  printf("FIN THREAD_RESOLUTION\n");
-
-  pthread_exit(NULL);
+  
+   pthread_exit(NULL);
 }
 
 /* Gère la phase d'enchere */
@@ -92,7 +98,7 @@ void* thread_enchere(void *arg){
 
   if(pthread_create(&tid_timer, NULL, thread_timer, (void *) TEMPS_ENCHERE) != 0){
     perror("pthread_create thread_timer in thread_enchere");
-    return EXIT_FAILURE;
+    exit(1);
   }
   pthread_mutex_lock(&mutex_cond_enchere);
   pthread_cond_wait(&cond_enchere, &mutex_cond_enchere);
@@ -103,53 +109,53 @@ void* thread_enchere(void *arg){
   /* Fin de la phase d'enchere */
   finenchere();
 
-  /* Initiaion de la phase de résolution */  
+  /* Initialisation de la phase de résolution */  
   pthread_mutex_lock(&mutex_phase);
   set_phase("resolution");
+  pthread_mutex_unlock(&mutex_phase);
 
   /* Mise à jour du joueur actif */
-  printf("update_joueur_actif dans thread_enchere (fin)\n");
   update_joueur_actif();
   
+  /* Création de la thread de résolution */
+  pthread_mutex_lock(&mutex_phase);
   if(pthread_create(&tid_phase, NULL, thread_resolution, NULL) != 0){
     perror("pthread_create thread_resolution");
-    return EXIT_FAILURE;
+    exit(1);
   }
   pthread_mutex_unlock(&mutex_phase);
 
+  pthread_exit(NULL);
 }
 
 /* Gère la phase de réflexion */
 void* thread_reflexion(void *arg){
-
   printf("PHASE DE REFLEXION\n\n");
   
   /* Nouveau tour */
   set_phase("reflexion");
-  tour(enigme);
   
   if(pthread_create(&tid_timer, NULL, thread_timer, (void *) TEMPS_REFLEXION) != 0){
     perror("pthread_create thread_timer in thread_reflexion");
-    return EXIT_FAILURE;
+    exit(1);
   }
   pthread_mutex_lock(&mutex_cond_reflexion);
   pthread_cond_wait(&cond_reflexion, &mutex_cond_reflexion);
   pthread_mutex_unlock(&mutex_cond_reflexion); 
 
-  printf("JE PASSE ICI\n");
   pthread_cancel(tid_timer);
-  printf("JE PASSE LA\n");
+   
   /* Fin de la phase de reflexion */
   pthread_mutex_lock(&mutex_joueur_solution);
   if(joueur_solution == 0)
     finreflexion();
   pthread_mutex_unlock(&mutex_joueur_solution);
-  printf("COUCOU\n");  
+ 
   /* Lancement de la phase d'enchere */
   pthread_mutex_lock(&mutex_phase);
   if(pthread_create(&tid_phase, NULL, thread_enchere, (void *) NULL) != 0){
     perror("pthread_create thread_enchere in thread_reflexion");
-    return EXIT_FAILURE;
+    exit(1);
   }
   pthread_mutex_unlock(&mutex_phase);
   
@@ -159,11 +165,11 @@ void* thread_reflexion(void *arg){
 /* gère la reception des messages d'un client */
 void* thread_reception(void *arg){
   int sock_com = (int) arg;
-  int nb_lus, nb_clients;
+  int nb_clients;
   char cmd[20], user[MAX_SIZE], coups[200];
   int coups_int;
   char buffer[MAX_SIZE];
-  while((nb_lus = read(sock_com, &buffer, MAX_SIZE)) > 0){
+  while(read(sock_com, &buffer, MAX_SIZE) > 0){
     sscanf(buffer, "%[^/]/%[^/]/%[^/]/", cmd, user, coups);
     printf("\ncmd: %s\n", cmd);
     printf("user: %s\n", user);
@@ -221,9 +227,6 @@ void* thread_reception(void *arg){
 	pthread_mutex_unlock(&mutex_cond_resolution);
 
 	sasolution(user, coups);
-
-	printf("----------hello\n");
-	
       }
     }
 
@@ -239,15 +242,6 @@ void* thread_reception(void *arg){
       traitement_chat(user, coups);
     }
 
-    /*printf("Listes : \n");
-    pthread_mutex_lock(&mutex_attente);
-    print_client_list(file_attente);
-    pthread_mutex_unlock(&mutex_attente);
-    pthread_mutex_lock(&mutex_clients);
-    print_client_list(clients);
-    pthread_mutex_unlock(&mutex_clients);
-    printf("\n"); */
-    
     memset(cmd, '\0', 20);
     memset(user, '\0', MAX_SIZE);
     memset(coups, '\0', 200);
@@ -260,10 +254,7 @@ void* thread_reception(void *arg){
 /* traitement à effectuer pour chaque client */
 void* client_thread(void *arg){
   int sock_com = (int) arg;
-  int nb_lus;
   pthread_t tid;
-  char cmd[20], user[MAX_SIZE], coups[20];
-  char buffer[MAX_SIZE];
 
   pthread_mutex_lock(&mutex_attente);
   file_attente = add_new_client(file_attente, pthread_self(), sock_com);
@@ -272,7 +263,7 @@ void* client_thread(void *arg){
   /* Création d'une thread qui va gérer la réception de message */  
   if(pthread_create(&tid, NULL, thread_reception, (void *) sock_com) != 0){
     perror("pthread_create");
-    return EXIT_FAILURE;
+    exit(1);
   }
 
   pthread_exit((void*) 0);

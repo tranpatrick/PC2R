@@ -1,6 +1,6 @@
 CC=gcc
 LFLAGS= -pthread
-CFLAGS=-W -Wall -ansi -pedantic
+CFLAGS=-W -Wall
 
 BIN=bin/
 OBJ=obj/
