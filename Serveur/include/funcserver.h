@@ -67,7 +67,7 @@ void vainqueur();
 
 /* tour donne le bilan de la session courant (tour courant; (joueur,score)) et l'enigme (position des robots et du point d'arrivé) */
 /* ATTENTION ajouter bilan et enigme en param */
-void tour(char *enigme);
+void tour();
 
 /* validation de l'annonce d'une solution par le serveur, fin de la phase de reflexion */
 void tuastrouve(char *name, int coups);

@@ -263,7 +263,8 @@ void session(char* plateau){
   pthread_mutex_unlock(&mutex_tour);  
 
   /* Lancement du premier tour */
-  tour(enigme);
+  enigme = genererate_random_enigme();
+  tour();
 }
 
 /* fin de la session courante, et annonce du vainqueur */
@@ -288,7 +289,7 @@ void vainqueur(){
 }
 
 /* tour donne le bilan de la session courant (tour courant; (joueur,score)) et l'enigme (position des robots et du point d'arrivé) */
-void tour(char *enigme){
+void tour(){
   client_list *aux = clients;
   char buffer[MAX_SIZE];
   sleep(1); /* permet au client d'avoir le temps d'afficher le plateau avant le tour */
@@ -297,7 +298,7 @@ void tour(char *enigme){
   pthread_mutex_lock(&mutex_tour);
   num_tour++;
   pthread_mutex_unlock(&mutex_tour);
-  enigme = genererate_random_enigme();
+   enigme = genererate_random_enigme(); 
   printf("[funcserver.c] %s\n", enigme);
   /* Notification début de tour avec enigme */
   sprintf(buffer, "TOUR/%s/%s/\n", enigme, bilan());
