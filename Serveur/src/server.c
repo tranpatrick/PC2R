@@ -20,9 +20,9 @@
 #define PHASE_REFLEXION 1
 #define PHASE_ENCHERE 2
 #define PHASE_RESOLUTION 3
-#define TEMPS_REFLEXION 20
-#define TEMPS_ENCHERE 10
-#define TEMPS_RESOLUTION 20
+#define TEMPS_REFLEXION 300
+#define TEMPS_ENCHERE 30
+#define TEMPS_RESOLUTION 60
 
 /* Gère les timers pour les phases */
 void* thread_timer(void *arg){
