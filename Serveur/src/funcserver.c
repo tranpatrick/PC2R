@@ -198,6 +198,8 @@ void connecte(char *name){
 
 /* notification de déconnexion d'un joueur */
 void sorti(char *name){
+  printf("DEBUT SORTI\n");
+
   char buffer[MAX_SIZE];
   sprintf(buffer, "DECONNEXION/%s/\n", name);
   client_list *l = clients;
@@ -237,13 +239,16 @@ void sorti(char *name){
   /* suppression du client des listes et annulation des threads associées */
   close(tmp->socket);
   
-  if(tid != NULL){
-    pthread_mutex_lock(&mutex_clients);
-    clients = suppr_client(clients, name);
-    pthread_mutex_unlock(&mutex_clients);
-    pthread_cancel(tid);
-    pthread_exit(NULL);
-  }else{
+  pthread_mutex_lock(&mutex_clients);
+  clients = suppr_client(clients, name);
+  pthread_mutex_unlock(&mutex_clients);
+  pthread_mutex_lock(&mutex_attente);
+  file_attente = suppr_client(file_attente, name);
+  pthread_mutex_unlock(&mutex_attente);
+  /*pthread_cancel(tid);
+    pthread_exit(NULL);*/
+
+  /*else{
     if(tid != NULL){
       pthread_mutex_lock(&mutex_attente);
       file_attente = suppr_client(file_attente, name);
@@ -253,7 +258,10 @@ void sorti(char *name){
     }else{
       fprintf(stderr, "sorti : impossible de déconnecter %s\n", name);
     }
-  }
+    }*/
+
+  printf("FIN SORTI\n");
+
 }
 
 void session_attente(char *plateau, int socket){
@@ -270,7 +278,7 @@ void session(char* plateau){
   sprintf(buffer,"SESSION/%s/\n",plateau);
   pthread_mutex_lock(&mutex_clients);
   while(l != NULL){
-    l->score = 0; /* remise à 0 des scores (nouvelle session)*/
+    l->score = 0; /*remise à 0 des scores (nouvelle session)*/
     write(l->socket, buffer, strlen(buffer));
     l = l->next;
   }
@@ -280,19 +288,41 @@ void session(char* plateau){
   pthread_mutex_lock(&mutex_tour);
   num_tour = 0;
   pthread_mutex_unlock(&mutex_tour);  
+
+  /* Création d'une thread qui va gérer la phase de reflexion */
+  pthread_mutex_lock(&mutex_phase);
+  if(pthread_create(&tid_phase, NULL, thread_reflexion, NULL) != 0){
+    perror("pthread_create thread_reflexion");
+    return EXIT_FAILURE;
+  }
+  pthread_mutex_unlock(&mutex_phase);
+
 }
 
 /* fin de la session courante, et annonce du vainqueur */
-void vainqueur(char *name){
+void vainqueur(){
+  printf("DEBUT VAINQUEUR\n");
+
   client_list *l = clients;
   char buffer[MAX_SIZE];
-  sprintf(buffer, "VAINQUEUR/%s/\n", name);
+
+  /* Annulation des threads */
+  pthread_mutex_lock(&mutex_phase);
+  pthread_cancel(tid_timer);
+  pthread_cancel(tid_phase);
+  set_phase("nulle");
+  pthread_mutex_unlock(&mutex_phase);
+
+  sprintf(buffer, "VAINQUEUR/%s/\n", bilan());
   pthread_mutex_lock(&mutex_clients);
   while(l != NULL){
     write(l->socket, buffer, strlen(buffer));
     l = l->next;
   }
   pthread_mutex_unlock(&mutex_clients);
+
+  printf("FIN VAINQUEUR\n");
+
 }
 
 /* tour donne le bilan de la session courant (tour courant; (joueur,score)) et l'enigme (position des robots et du point d'arrivé) */
@@ -319,6 +349,7 @@ void tour(char *enigme){
 
   printf("1.5\n");
 
+  /* Remise à -1 de toutes les propositions d'enchères */
   pthread_mutex_lock(&mutex_clients);
   while(aux != NULL){
     aux->proposition = -1;
@@ -537,6 +568,10 @@ void bonne(){
     aux = aux->next;
   }
   pthread_mutex_unlock(&mutex_clients);
+
+  /* Lancement du nouveau tour */
+  nouveautour();
+
 }
 
 /* notification de solution refusée à tous les clients */
@@ -633,24 +668,14 @@ nouveautour(){
 
   printf("Nbre de clients dans file_attente: %d\n", client_list_length(file_attente));
 
-  /* Attention fait liste circulaire au 2e appel de cette fonction */
-
-  while(att != NULL && att->next != NULL){
-    if(att->next->name != NULL){
-      tmp = att->next;
-      att->next = att->next->next;
-      tmp->next = clients;
-      clients = tmp;
-    }
-    att = att->next;
-  }
-  att = file_attente;
-  if(att != NULL && att->name != NULL){
+  while(att != NULL && att->name != NULL){
+    file_attente = att->next;
+    tmp = att->next;
     att->next = clients;
     clients = att;
+    att = tmp;
   }
   
-
   printf("Nbre de clients: %d\n", client_list_length(clients));
 
   print_client_list(clients);
@@ -744,4 +769,42 @@ void traitement_chat(char *user, char *coups) {
     l = l->next;
   }
   pthread_mutex_unlock(&mutex_clients);
+}
+
+/* relance une session lorsqu'une session se termine et si les conditions le permettent */
+void nouvellesession(){
+
+  int nb_clients;
+
+  /* transfert de tous les clients dans la file d'attente (ayant un nom) vers clients */
+  pthread_mutex_lock(&mutex_clients);
+  pthread_mutex_lock(&mutex_attente);
+  client_list *att = file_attente;
+  client_list *tmp;
+
+  while(att != NULL && att->name != NULL){
+    file_attente = att->next;
+    tmp = att->next;
+    att->next = clients;
+    clients = att;
+    att = tmp;
+  }
+  
+  pthread_mutex_unlock(&mutex_attente);
+  pthread_mutex_unlock(&mutex_clients);
+
+  /* Si le nombre de clients est supérieur à 2, lancer une session */
+  pthread_mutex_lock(&mutex_clients);
+  nb_clients = client_list_length(clients);
+  pthread_mutex_unlock(&mutex_clients);
+
+  if(nb_clients >= 2){
+    session(plateau);
+  }
+
+}
+
+/* vérifie les scores, si un des scores a atteint le score objectif, fin de la session */
+void check_score(){
+  
 }

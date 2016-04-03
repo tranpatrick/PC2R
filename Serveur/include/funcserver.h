@@ -61,7 +61,7 @@ void sorti(char *name);
 void session(char *plateau);
 
 /* fin de la session courante, et annonce du vainqueur */
-void vainqueur(char *name);
+void vainqueur();
 
 /* tour donne le bilan de la session courant (tour courant; (joueur,score)) et l'enigme (position des robots et du point d'arrivé) */
 /* ATTENTION ajouter bilan et enigme en param */
@@ -108,5 +108,10 @@ void finreso();
 
 /* temps depasse, nouvelle phase de resolution (joueur suivant), affichage du joueur actif */
 void troplong();
+
+/* relance une session lorsqu'une session se termine et si les conditions le permettent */
+void nouvellesession();
+
+/* vérifie les scores, si un des scores a atteint le score objectif, fin de la session */
 
 #endif

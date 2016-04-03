@@ -21,8 +21,8 @@
 #define PHASE_ENCHERE 2
 #define PHASE_RESOLUTION 3
 #define TEMPS_REFLEXION 30
-#define TEMPS_ENCHERE 5
-#define TEMPS_RESOLUTION 10
+#define TEMPS_ENCHERE 10
+#define TEMPS_RESOLUTION 45
 
 /* Gère les timers pour les phases */
 void* thread_timer(void *arg){
@@ -184,13 +184,6 @@ void* thread_reception(void *arg){
       pthread_mutex_unlock(&mutex_clients);
       if(nb_clients == 2 && get_phase() == -1){
 	session(plateau);
-	/* Création d'une thread qui va gérer la phase de reflexion */
-	pthread_mutex_lock(&mutex_phase);
-	if(pthread_create(&tid_phase, NULL, thread_reflexion, NULL) != 0){
-	  perror("pthread_create thread_reflexion");
-	  return EXIT_FAILURE;
-	}
-	pthread_mutex_unlock(&mutex_phase);
       }else if(get_phase() != -1){
 	session_attente(plateau, sock_com);
       }
@@ -204,8 +197,12 @@ void* thread_reception(void *arg){
       nb_clients = client_list_length(clients);
       pthread_mutex_unlock(&mutex_clients);
       if(nb_clients == 1){
-        
+        vainqueur();
       }
+
+      /* Relance d'une session si la liste d'attente est non vide */
+      nouvellesession();
+
       pthread_exit(NULL);
     }
 
