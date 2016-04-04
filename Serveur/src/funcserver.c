@@ -273,8 +273,8 @@ void vainqueur(){
 
   /* Annulation des threads */
   pthread_mutex_lock(&mutex_phase);
-  pthread_cancel(tid_timer);
   pthread_cancel(tid_phase);
+  pthread_cancel(tid_timer);
   set_phase("nulle");
   pthread_mutex_unlock(&mutex_phase);
 
@@ -366,6 +366,7 @@ void tuastrouve(char *name, int coups){
 
 /* signalement de l'annonce d'une solution à tous les joueurs */
 void ilatrouve(char *name, int coups){
+
   pthread_mutex_lock(&mutex_clients);
   client_list *aux = clients;
   char buffer[MAX_SIZE];
@@ -400,7 +401,7 @@ void finreflexion(){
 
 /* traitement d'une enchere */
 void traitement_enchere(char *name, int coups){
-  pthread_mutex_lock(&mutex_clients);
+   pthread_mutex_lock(&mutex_clients);
   client_list *cl = get_client(clients, name);
   
   if(cl->proposition != -1 && coups >= cl->proposition){

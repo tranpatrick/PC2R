@@ -21,8 +21,24 @@
 #define PHASE_ENCHERE 2
 #define PHASE_RESOLUTION 3
 #define TEMPS_REFLEXION 300
-#define TEMPS_ENCHERE 10
-#define TEMPS_RESOLUTION 30
+#define TEMPS_ENCHERE 30
+#define TEMPS_RESOLUTION 60
+
+/* Permet d'unlock un mutex lorsqu'une thread qui attendait dessus a été cancel (avec pthread_cleanup_push) */
+void unlock_mutex(void *arg){
+   int tmp = (int) arg;
+  switch(tmp){
+  case 1:
+    pthread_mutex_unlock(&mutex_cond_reflexion);
+    break;
+  case 2:
+    pthread_mutex_unlock(&mutex_cond_enchere);
+    break;
+  case 3:
+    pthread_mutex_unlock(&mutex_cond_resolution);
+    break;
+  }
+ }
 
 /* Gère les timers pour les phases */
 void* thread_timer(void *arg){
@@ -60,6 +76,9 @@ void *thread_resolution(void *arg){
   
   printf("PHASE DE RESOLUTION\n\n");
 
+  /* Permet de relacher le mutex quand la thread est canceled */
+  pthread_cleanup_push(unlock_mutex, 3);
+  
  pthread_mutex_lock(&mutex_joueur_actif);
  prop = joueur_actif;
  pthread_mutex_unlock(&mutex_joueur_actif);
@@ -86,13 +105,20 @@ void *thread_resolution(void *arg){
   if(trop_long == 1)
     troplong();
   pthread_mutex_unlock(&mutex_trop_long);
+
+  /* Permet d'enlever la fonction unlock_mutex dans la pile d'appel */
+  pthread_cleanup_pop(1);
   
-   pthread_exit(NULL);
+  pthread_exit(NULL);
 }
 
 /* Gère la phase d'enchere */
 void* thread_enchere(void *arg){
+
   printf("PHASE D'ENCHERE\n\n");
+  
+  /* Permet de relacher le mutex quand la thread est canceled */
+  pthread_cleanup_push(unlock_mutex, 2);
   
   set_phase("enchere");
 
@@ -124,13 +150,19 @@ void* thread_enchere(void *arg){
     exit(1);
   }
   pthread_mutex_unlock(&mutex_phase);
-
+  
+  /* Permet d'enlever la fonction unlock_mutex dans la pile d'appel */
+  pthread_cleanup_pop(1);
+  
   pthread_exit(NULL);
 }
 
 /* Gère la phase de réflexion */
 void* thread_reflexion(void *arg){
   printf("PHASE DE REFLEXION\n\n");
+
+  /* Permet de relacher le mutex quand la thread est canceled */
+  pthread_cleanup_push(unlock_mutex, 1);
   
   /* Nouveau tour */
   set_phase("reflexion");
@@ -158,6 +190,9 @@ void* thread_reflexion(void *arg){
     exit(1);
   }
   pthread_mutex_unlock(&mutex_phase);
+
+  /* Permet d'enlever la fonction unlock_mutex dans la pile d'appel */
+  pthread_cleanup_pop(1);
   
   pthread_exit(NULL);
 }
@@ -217,7 +252,7 @@ void* thread_reception(void *arg){
 	pthread_mutex_lock(&mutex_conflit);
 	tuastrouve(user, coups_int);
 	pthread_mutex_unlock(&mutex_conflit);
-      }else{
+      }else if(get_phase() == PHASE_RESOLUTION){
 	pthread_cancel(tid_timer);
 	pthread_mutex_lock(&mutex_trop_long);
 	trop_long = 0;
@@ -232,14 +267,20 @@ void* thread_reception(void *arg){
 
     /* ENCHERE */
     else if(strcmp(cmd, "ENCHERE") == 0){
-      pthread_mutex_lock(&mutex_conflit);
-      traitement_enchere(user, coups_int);
-      pthread_mutex_unlock(&mutex_conflit);
+      if(get_phase() == PHASE_ENCHERE){
+	pthread_mutex_lock(&mutex_conflit);
+	traitement_enchere(user, coups_int);
+	pthread_mutex_unlock(&mutex_conflit);
+      }
     }
 
     /* SEND */
     else if(strcmp(cmd, "SEND") == 0){
       traitement_chat(user, coups);
+    }
+
+    else{
+      printf("Commande reçu au mauvaise moment !\n");
     }
 
     memset(cmd, '\0', 20);
