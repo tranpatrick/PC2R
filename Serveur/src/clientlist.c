@@ -59,8 +59,8 @@ client_list* suppr_client(client_list *l, char* name){
   }
   /* si le premier élément correspond au tid recherché */
   if(strcmp(l->name, name) == 0){
-    l = l->next;
-    return l;
+    /*l = l->next;*/
+    return l->next;
   }
   /* recherche de l'élément à supprimer */
   aux = l;
@@ -76,8 +76,8 @@ client_list* suppr_client(client_list *l, char* name){
 
   /* l'élément suivant correspond a l'element recherché */
   aux->next = aux->next->next;
-  printf("suppr client : ");
-  print_client_list(l);
+  /*  printf("suppr client : ");
+      print_client_list(l);*/
   return l;
 }
 
