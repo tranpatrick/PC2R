@@ -14,7 +14,6 @@
 #include "../include/clientlist.h"
 #include "../include/funcserver.h"
 
-#define MAX_CO 100
 #define PORT 2016
 
 int main(){
@@ -57,7 +56,7 @@ int main(){
   }
 
   /* Le serveur est pret à attendre */
-  listen(sock_connexion, MAX_CO);
+  listen(sock_connexion, SOMAXCONN);
 
   for(;;){
     printf("Waiting for players to connect ...\n");
