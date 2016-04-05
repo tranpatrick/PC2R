@@ -26,7 +26,7 @@
 
 /* Permet d'unlock un mutex lorsqu'une thread qui attendait dessus a été cancel (avec pthread_cleanup_push) */
 void unlock_mutex(void *arg){
-   int tmp = (int) arg;
+  int tmp = (int) arg;
   switch(tmp){
   case 1:
     pthread_mutex_unlock(&mutex_cond_reflexion);
@@ -36,9 +36,10 @@ void unlock_mutex(void *arg){
     break;
   case 3:
     pthread_mutex_unlock(&mutex_cond_resolution);
+    pthread_mutex_unlock(&mutex_trop_long);
     break;
   }
- }
+}
 
 /* Gère les timers pour les phases */
 void* thread_timer(void *arg){
@@ -47,26 +48,36 @@ void* thread_timer(void *arg){
   sleep(sec);
   switch(phase){
   case PHASE_REFLEXION:  
+    /* Permet de relacher le mutex quand la thread est canceled */
+    pthread_cleanup_push(unlock_mutex, 1);
     pthread_mutex_lock(&mutex_cond_reflexion);
     pthread_cond_signal(&cond_reflexion);
     pthread_mutex_unlock(&mutex_cond_reflexion);
     break;
   case PHASE_ENCHERE:
+    /* Permet de relacher le mutex quand la thread est canceled */
+    pthread_cleanup_push(unlock_mutex, 2);
     pthread_mutex_lock(&mutex_cond_enchere);
     pthread_cond_signal(&cond_enchere);
     pthread_mutex_unlock(&mutex_cond_enchere);
     break;
   case PHASE_RESOLUTION:
+    /* Permet de relacher le mutex quand la thread est canceled */
+    pthread_cleanup_push(unlock_mutex, 3);
     pthread_mutex_lock(&mutex_trop_long);
     trop_long = 1;
     pthread_mutex_unlock(&mutex_trop_long);  
     pthread_mutex_lock(&mutex_cond_resolution);
     pthread_cond_signal(&cond_resolution);
     pthread_mutex_unlock(&mutex_cond_resolution);
-     break;
+    break;
   default:
     break;
   }
+
+  /* Permet d'enlever la fonction unlock_mutex dans la pile d'appel */
+  pthread_cleanup_pop(1);
+
   pthread_exit(NULL);
 }
 
@@ -79,9 +90,9 @@ void *thread_resolution(void *arg){
   /* Permet de relacher le mutex quand la thread est canceled */
   pthread_cleanup_push(unlock_mutex, 3);
   
- pthread_mutex_lock(&mutex_joueur_actif);
- prop = joueur_actif;
- pthread_mutex_unlock(&mutex_joueur_actif);
+  pthread_mutex_lock(&mutex_joueur_actif);
+  prop = joueur_actif;
+  pthread_mutex_unlock(&mutex_joueur_actif);
   if(prop == NULL){
     finreso();
   }
@@ -224,9 +235,9 @@ void* thread_reception(void *arg){
       printf("nb client = %d\n", nb_clients);
       pthread_mutex_unlock(&mutex_clients);
       if(nb_clients == 2 && get_phase() == -1){
-	session(plateau);
+	session();
       }else if(get_phase() != -1){
-	session_attente(plateau, sock_com);
+	session_attente(sock_com);
       }
     }
 

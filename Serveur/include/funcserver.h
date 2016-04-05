@@ -9,13 +9,14 @@ extern client_list *clients; /* Liste des clients connectés */
 extern client_list *file_attente; /* Liste des clients en attente d'un nouveau tour */
 extern int num_tour; /* numero de tour courant */
 extern int min_enchere; /* enchere minimum */
-extern char *plateau; /* plateau de jeu */
+extern char **plateaux; /* plateaux de jeu */
 extern char *enigme; /* disposition des pions */
 extern pthread_t tid_phase; /* tid de la thread qui gère la phase courante */
 extern pthread_t tid_timer; /* tid de la thread qui gère le timer courant */
 extern int joueur_solution; /* booleen pour savoir si un joueur a émis une solution */
 extern client_list *joueur_actif; /* le joueur qui doit proposer sa solution */
 extern int trop_long;  /* permet de savoir si l'utilisateur qui a émit la solution, l'a émis à temps */
+extern int num_plateau; /* numéro du plateau */
 
 extern pthread_mutex_t mutex_clients;
 extern pthread_mutex_t mutex_attente;
@@ -27,6 +28,7 @@ extern pthread_mutex_t mutex_joueur_solution;
 extern pthread_mutex_t mutex_joueur_actif;
 extern pthread_mutex_t mutex_trop_long;
 extern pthread_mutex_t mutex_conflit; /* évite de traiter deux solutions ou enchere en même temps */
+extern pthread_mutex_t mutex_num_plateau;
 
 extern pthread_mutex_t mutex_cond_reflexion;
 extern pthread_mutex_t mutex_cond_enchere;
@@ -57,10 +59,10 @@ void connecte(char *name);
 void sorti(char *name);
 
 /* Envoie du plateau de la session pour les clients en attente */
-void session_attente(char *plateau, int socket);
+void session_attente(int socket);
 
 /* annonce de début de session avec envoi du tableau */
-void session(char *plateau);
+void session();
 
 /* fin de la session courante, et annonce du vainqueur */
 void vainqueur();

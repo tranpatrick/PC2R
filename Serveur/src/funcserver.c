@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
 #include "../include/funcserver.h"
 #include "../include/clientlist.h"
 #include "../include/generator.h"
@@ -44,22 +45,20 @@ client_list *file_attente = NULL; /* Liste des clients en attente d'un nouveau t
 client_list *joueur_actif = NULL; /* le joueur qui doit proposer sa solution */
 
 int num_tour;
-/*int min_enchere;*/
-/*client_list *liste_encherisseurs = NULL;*/
 int joueur_solution;
 int trop_long;
 int compteur_coups = 0;
+int num_plateau;
 
-/* plateau par défaut pour l'instant */
-char *plateau = 
-  "(0,3,D)(0,11,D)(1,13,G)(1,13,H)(2,5,D)(2,5,B)(2,9,D)(2,9,B)(4,0,B)(4,2,D)(4,2,H)(4,15,H)(5,7,G)(5,7,B)(5,14,G)(5,14,B)(6,1,G)(6,1,H)(6,7,B)(6,8,B)(6,11,H)(6,11,D)(7,6,D)(7,9,G)(8,5,H)(8,5,D)(8,6,D)(8,9,G)(9,1,B)(9,1,D)(9,12,H)(9,12,D)(10,4,G)(10,4,B)(10,15,H)(12,0,H)(12,9,G)(12,9,H)(13,5,H)(13,5,D)(13,14,G)(13,14,B)(14,3,G)(14,3,H)(14,11,D)(14,11,B)(15,6,D)(15,13,D)(8,7,B)(8,8,B)";
+/* liste des plateaux */
+char **plateaux; 
+
 /* enigme temporaire */
 char *enigme = NULL; /*"(13,5,9,12,6,1,5,14,8,5,R)";  */
 
 
 pthread_t tid_phase;
 pthread_t tid_timer;
-
 
 /* Permet d'obtenir le bilan de la partie en cours */
 char* bilan(){
@@ -192,8 +191,8 @@ void connecte(char *name){
 void sorti(char *name){
   char buffer[MAX_SIZE];
   sprintf(buffer, "DECONNEXION/%s/\n", name);
-  client_list *l = clients;
-  client_list *l2 = file_attente;
+  client_list *l;
+  client_list *l2;
   
   client_list *tmp = get_client(clients, name);
   if(tmp == NULL){
@@ -206,6 +205,7 @@ void sorti(char *name){
     
   /* Notification pour les utilisateurs dans la liste des joueurs */
   pthread_mutex_lock(&mutex_clients);
+  l = clients;
   while(l != NULL){
     if(strcmp(l->name, name) != 0){
       write(l->socket, buffer, strlen(buffer));
@@ -216,6 +216,7 @@ void sorti(char *name){
 
   /* Notification pour les utilisateurs dans la file d'attente */
   pthread_mutex_lock(&mutex_attente);
+  l2 = file_attente;
   while(l2 != NULL){
     memset(buffer, '\0', MAX_SIZE);
     if(strcmp(l2->name, name) != 0){
@@ -237,18 +238,26 @@ void sorti(char *name){
 }
 
 /* Envoie du plateau de la session pour les clients en attente */
-void session_attente(char *plateau, int socket){
+void session_attente(int socket){
   char buffer[MAX_SIZE];
-  sprintf(buffer,"SESSION/%s/\n",plateau);
+  pthread_mutex_lock(&mutex_num_plateau);
+  int num = num_plateau;
+  pthread_mutex_unlock(&mutex_num_plateau);
+  sprintf(buffer,"SESSION/%s/\n",plateaux[num_plateau]);
   write(socket, buffer, strlen(buffer));
 }
 
 /* annonce de début de session avec envoi du tableau */
-void session(char* plateau){
+void session(){
+  srand(time(NULL));
+  int alea = rand()%3;
+  pthread_mutex_lock(&mutex_num_plateau);
+  num_plateau = alea;
+  pthread_mutex_unlock(&mutex_num_plateau);
+  pthread_mutex_lock(&mutex_clients);
   client_list *l = clients;
   char buffer[MAX_SIZE];
-  sprintf(buffer,"SESSION/%s/\n",plateau);
-  pthread_mutex_lock(&mutex_clients);
+  sprintf(buffer,"SESSION/%s/\n",plateaux[alea]);
   while(l != NULL){
     l->score = 0; /*remise à 0 des scores (nouvelle session)*/
     write(l->socket, buffer, strlen(buffer));
@@ -577,7 +586,11 @@ void traitement_solution(char *solution){
   joueur_actif->proposition = -1;
   pthread_mutex_unlock(&mutex_joueur_actif);
   
-  if(simulation(plateau, enigme, solution) == 1 ){ 
+  pthread_mutex_lock(&mutex_num_plateau);
+  int num = num_plateau;
+  pthread_mutex_unlock(&mutex_num_plateau);
+
+  if(simulation(plateaux[num], enigme, solution) == 1 ){ 
 
     pthread_mutex_lock(&mutex_compteur_coups);   
     if(prop >= compteur_coups) {
@@ -721,7 +734,7 @@ void nouvellesession(){
   pthread_mutex_unlock(&mutex_clients);
 
   if(nb_clients >= 2){
-    session(plateau);
+    session();
   }
 }
 
