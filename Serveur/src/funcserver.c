@@ -7,7 +7,6 @@
 #include <time.h>
 #include "../include/funcserver.h"
 #include "../include/clientlist.h"
-#include "../include/generator.h"
 #include "../include/board.h"
 #include "../include/server.h"
 
@@ -31,6 +30,7 @@ pthread_mutex_t mutex_joueur_actif = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_trop_long = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_conflit = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_compteur_coups = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_num_plateau = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t mutex_cond_reflexion = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_cond_enchere = PTHREAD_MUTEX_INITIALIZER;
@@ -48,7 +48,7 @@ int num_tour;
 int joueur_solution;
 int trop_long;
 int compteur_coups = 0;
-int num_plateau;
+int num_plateau = 0;
 
 /* liste des plateaux */
 char **plateaux; 
@@ -253,6 +253,7 @@ void session(){
   int alea = rand()%3;
   pthread_mutex_lock(&mutex_num_plateau);
   num_plateau = alea;
+  printf("Plateau %d\n",alea);
   pthread_mutex_unlock(&mutex_num_plateau);
   pthread_mutex_lock(&mutex_clients);
   client_list *l = clients;

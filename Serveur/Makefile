@@ -15,7 +15,7 @@ all: $(BIN)main
 ##test: test.c clientlist.o
 
 #$(BIN)%: $(SRC)%.c $(OBJ)clientlist.o
-$(BIN)%: $(OBJ)%.o $(OBJ)funcserver.o $(OBJ)clientlist.o $(OBJ)board.o $(OBJ)server.o $(OBJ)generator.o
+$(BIN)%: $(OBJ)%.o $(OBJ)funcserver.o $(OBJ)clientlist.o $(OBJ)board.o $(OBJ)server.o
 	@if [ -d $(BIN) ]; then : ; else mkdir $(BIN); fi
 	$(CC) $(LFLAGS) -o $@ $^
 

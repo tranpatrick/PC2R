@@ -3,8 +3,9 @@
 
 #include <pthread.h>
 
-extern int compteur_coups;
+extern int compteur_coups; /* compteur de coups effectués actuellement dans simulation */
 extern pthread_mutex_t mutex_compteur_coups;
+int cibles[16][16]; /* Tableau des cibles possibles */
 
 typedef struct square{
   int top_wall;
@@ -36,5 +37,8 @@ typedef struct board{
 square* create_square();
 board* create_board(char* plateau, char* enigme);
 int simulation(char *desc_plateau, char *enigme, char *solution);
-  
+void init_matrice();
+int *get_random_cible();
+char *genererate_random_enigme();  
+
 #endif

@@ -26,8 +26,8 @@
 
 /* Permet d'unlock un mutex lorsqu'une thread qui attendait dessus a été cancel (avec pthread_cleanup_push) */
 void unlock_mutex(void *arg){
-  int tmp = (int) arg;
-  switch(tmp){
+  int num = (int) arg;
+  switch(num){
   case 1:
     pthread_mutex_unlock(&mutex_cond_reflexion);
     break;
@@ -48,22 +48,16 @@ void* thread_timer(void *arg){
   sleep(sec);
   switch(phase){
   case PHASE_REFLEXION:  
-    /* Permet de relacher le mutex quand la thread est canceled */
-    pthread_cleanup_push(unlock_mutex, 1);
     pthread_mutex_lock(&mutex_cond_reflexion);
     pthread_cond_signal(&cond_reflexion);
     pthread_mutex_unlock(&mutex_cond_reflexion);
     break;
   case PHASE_ENCHERE:
-    /* Permet de relacher le mutex quand la thread est canceled */
-    pthread_cleanup_push(unlock_mutex, 2);
     pthread_mutex_lock(&mutex_cond_enchere);
     pthread_cond_signal(&cond_enchere);
     pthread_mutex_unlock(&mutex_cond_enchere);
     break;
   case PHASE_RESOLUTION:
-    /* Permet de relacher le mutex quand la thread est canceled */
-    pthread_cleanup_push(unlock_mutex, 3);
     pthread_mutex_lock(&mutex_trop_long);
     trop_long = 1;
     pthread_mutex_unlock(&mutex_trop_long);  
@@ -75,10 +69,7 @@ void* thread_timer(void *arg){
     break;
   }
 
-  /* Permet d'enlever la fonction unlock_mutex dans la pile d'appel */
-  pthread_cleanup_pop(1);
-
-  pthread_exit(NULL);
+   pthread_exit(NULL);
 }
 
 /* Gère la phase de résolution */
