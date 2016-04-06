@@ -20,6 +20,8 @@
 #define TEMPS_AFFICHAGE_SOLUTION 8
 #define OBJECTIF 10
 
+/* Description des variables partagées dans funcserver.h */
+
 pthread_mutex_t mutex_clients = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_attente = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_etat = PTHREAD_MUTEX_INITIALIZER;
@@ -53,7 +55,7 @@ int num_plateau = 0;
 /* liste des plateaux */
 char **plateaux; 
 
-/* enigme temporaire */
+/* enigme */
 char *enigme = NULL; /*"(13,5,9,12,6,1,5,14,8,5,R)";  */
 
 
@@ -66,10 +68,12 @@ char* bilan(){
   char tmp[MAX_SIZE];
   client_list *aux;
 
+  /* Récupération du numéro de tour courant */
   pthread_mutex_lock(&mutex_tour);
   sprintf(buffer, "%d", num_tour);
   pthread_mutex_unlock(&mutex_tour);
 
+  /* Construction du bilan en parcourant tous les joueurs */
   pthread_mutex_lock(&mutex_clients);
   aux = clients;
   while(aux != NULL){
@@ -110,6 +114,8 @@ void update_joueur_actif(){
   client_list *aux = clients;
   client_list *actif = NULL;
   int min = 999999999;
+
+  /* Parcours de tous les joueurs pour récupérer celui qui a une proposition de valeur minimum */
   pthread_mutex_lock(&mutex_clients);
   while(aux != NULL){
     if(aux->proposition != -1 && aux->proposition < min){
@@ -120,6 +126,7 @@ void update_joueur_actif(){
   }
   pthread_mutex_unlock(&mutex_clients);
 
+  /* Mise à jour du joueur actif */
   pthread_mutex_lock(&mutex_joueur_actif);
   joueur_actif = actif;
   pthread_mutex_unlock(&mutex_joueur_actif);
@@ -151,6 +158,7 @@ void bienvenue(char *name, int sock_com){
     write(sock_com, buffer, strlen(buffer));
     pthread_mutex_unlock(&mutex_clients);
     pthread_mutex_unlock(&mutex_attente);
+    /* Notification à tous les clients de la connexion de ce joueur */
     connecte(name);
   }
   pthread_mutex_unlock(&mutex_clients);
@@ -194,6 +202,7 @@ void sorti(char *name){
   client_list *l;
   client_list *l2;
   
+  /* Récupération du client à supprimer */
   client_list *tmp = get_client(clients, name);
   if(tmp == NULL){
     tmp = get_client(file_attente, name);
@@ -237,7 +246,7 @@ void sorti(char *name){
   pthread_mutex_unlock(&mutex_attente);
 }
 
-/* Envoie du plateau de la session pour les clients en attente */
+/* Envoie du plateau de la session pour le client en attente */
 void session_attente(int socket){
   char buffer[MAX_SIZE];
   pthread_mutex_lock(&mutex_num_plateau);
@@ -249,12 +258,14 @@ void session_attente(int socket){
 
 /* annonce de début de session avec envoi du tableau */
 void session(){
+  /* Selection d'un plateau aléatoire */
   srand(time(NULL));
   int alea = rand()%3;
   pthread_mutex_lock(&mutex_num_plateau);
   num_plateau = alea;
-  printf("Plateau %d\n",alea);
   pthread_mutex_unlock(&mutex_num_plateau);
+
+  /* Envoi du plateau à tous les joueurs */
   pthread_mutex_lock(&mutex_clients);
   client_list *l = clients;
   char buffer[MAX_SIZE];
@@ -272,7 +283,6 @@ void session(){
   pthread_mutex_unlock(&mutex_tour);  
 
   /* Lancement du premier tour */
-
   tour();
 }
 
@@ -281,13 +291,14 @@ void vainqueur(){
   client_list *l = clients;
   char buffer[MAX_SIZE];
 
-  /* Annulation des threads */
+  /* Annulation des threads de phase et de timer */
   pthread_mutex_lock(&mutex_phase);
   pthread_cancel(tid_phase);
   pthread_cancel(tid_timer);
   set_phase("nulle");
   pthread_mutex_unlock(&mutex_phase);
 
+  /* Envoi du nom de vainqueur à tous les joueurs */
   sprintf(buffer, "VAINQUEUR/%s/\n", bilan());
   pthread_mutex_lock(&mutex_clients);
   while(l != NULL){
@@ -308,14 +319,7 @@ void tour(){
   num_tour++;
   pthread_mutex_unlock(&mutex_tour);
   
-  /* char * enigmeTMP = genererate_random_enigme();
-  memset(enigme, '\0', 40);
-  sprintf(enigme, "%s", enigmeTMP);
-  
-  
-  
-  printf("[funcserver.c] %s\n", enigme); */
-  /* Notification début de tour avec enigme */
+  /* Génération d'une nouvelle énigme */
   if (enigme != NULL) {
     free(enigme);
   }
@@ -337,7 +341,7 @@ void tour(){
   joueur_solution = 0;
   pthread_mutex_unlock(&mutex_joueur_solution);
 
-  /* création d'une thread qui va gérer la phase de reflexion */
+  /* Création d'une thread qui va gérer la phase de reflexion */
   pthread_mutex_lock(&mutex_phase);
   if(pthread_create(&tid_phase, NULL, thread_reflexion, NULL) != 0){
     perror("pthread_create thread_reflexion");
@@ -351,32 +355,35 @@ void tuastrouve(char *name, int coups){
   pthread_mutex_lock(&mutex_clients);
   client_list *aux = clients;
   client_list *user = get_client(clients, name);
+
+  /* Notification à l'utilisateur */
   write(user->socket, "TUASTROUVE/\n", strlen("TUASTROUVE/\n"));
   
+  /* Mise à jour des information du client */
   while(aux != NULL){
     if(strcmp(aux->name, name) == 0){
       aux->proposition = coups;
       user->proposition = coups;
-
-      pthread_mutex_unlock(&mutex_clients);
-
-      /* joueur_solution = 1 */
-      pthread_mutex_lock(&mutex_joueur_solution);
-      joueur_solution = 1;
-      pthread_mutex_unlock(&mutex_joueur_solution);
-      
-      /* Annonce qu'une solution a été trouvée */
-      ilatrouve(name, coups);
       break;
     }
     aux = aux->next;
   }
-  pthread_mutex_unlock(&mutex_clients);
+  pthread_mutex_unlock(&mutex_clients);      
+
+  /* joueur_solution = 1 (une solution a été trouvée) */
+  pthread_mutex_lock(&mutex_joueur_solution);
+  joueur_solution = 1;
+  pthread_mutex_unlock(&mutex_joueur_solution);
+
+  /* Annonce qu'une solution a été trouvée */
+  ilatrouve(name, coups);
+  
 }
 
 /* signalement de l'annonce d'une solution à tous les joueurs */
 void ilatrouve(char *name, int coups){
 
+  /* Notification à tous les joueurs qu'une solution a été trouvée */
   pthread_mutex_lock(&mutex_clients);
   client_list *aux = clients;
   char buffer[MAX_SIZE];
@@ -395,7 +402,7 @@ void ilatrouve(char *name, int coups){
   pthread_mutex_unlock(&mutex_cond_reflexion);
 }
 
-/* expiration du delai de reflexion, fin de la phase de reflexion */
+/* Expiration du delai de reflexion, fin de la phase de reflexion */
 void finreflexion(){
   pthread_mutex_lock(&mutex_clients);
   char buffer[MAX_SIZE];
@@ -411,11 +418,11 @@ void finreflexion(){
 
 /* traitement d'une enchere */
 void traitement_enchere(char *name, int coups){
-   pthread_mutex_lock(&mutex_clients);
+  pthread_mutex_lock(&mutex_clients);
   client_list *cl = get_client(clients, name);
   
   if(cl->proposition != -1 && coups >= cl->proposition){
-    /* Echec */
+    /* Echec si un joueur essaye d'encherir une valeur plus grande que celle qu'il a déjà encheri */
     echec(cl->socket, name);
   }else{
     client_list *aux = clients;
@@ -479,6 +486,8 @@ void finenchere(){
   char *user;
   int min = 999999;
   char buffer[MAX_SIZE];
+
+  /* Recherche du joueur actif */
   while(l != NULL){
     if(l->proposition != -1 && l->proposition < min){
       user = l->name;
@@ -487,10 +496,13 @@ void finenchere(){
     l = l->next;
   }
 
+  /* S'il n'y a pas eu de solution proposée, envoi de finenchere avec null null */
   if(min == 999999)
     sprintf(buffer, "FINENCHERE/null/null/\n");
   else
     sprintf(buffer, "FINENCHERE/%s/%d/\n", user, min);
+
+  /* Notification à tous les clients */
   l = clients;
   while(l != NULL){
     write(l->socket, buffer, strlen(buffer));
@@ -550,6 +562,7 @@ void mauvaise(){
   /* Mise à jour du joueur actif */
   update_joueur_actif();
   
+  /* S'il n'y a plus de joueur actif, finreso sinon envoi de MAUVAISE avec le nom du joueur actif */
   pthread_mutex_lock(&mutex_joueur_actif);  
   if(joueur_actif == NULL){
     pthread_mutex_unlock(&mutex_joueur_actif);
@@ -562,6 +575,7 @@ void mauvaise(){
   
   sprintf(buffer, "MAUVAISE/%s/\n", tmp_name);
   
+  /* Notification à tous les clients */
   client_list *aux = clients;
   pthread_mutex_lock(&mutex_clients);
   while(aux != NULL){
@@ -581,31 +595,37 @@ void mauvaise(){
 
 /* verification de la solution */
 void traitement_solution(char *solution){
+  /* Récupération du nombre de coups que le joueur actif avait proposé et reset de cette variable */
   pthread_mutex_lock(&mutex_joueur_actif);
   client_list* tmp = joueur_actif;
   int prop = joueur_actif->proposition;
   joueur_actif->proposition = -1;
   pthread_mutex_unlock(&mutex_joueur_actif);
   
+  /* Récupération du numéro de plateau */
   pthread_mutex_lock(&mutex_num_plateau);
   int num = num_plateau;
   pthread_mutex_unlock(&mutex_num_plateau);
 
+  /* Simulation de la solution de l'utilisateur */
   if(simulation(plateaux[num], enigme, solution) == 1 ){ 
-
+    /* Si la solution est bonne, incrément du score du joueur et envoi de BONNE */
     pthread_mutex_lock(&mutex_compteur_coups);   
     if(prop >= compteur_coups) {
       tmp->score = tmp->score + 1;
-    pthread_mutex_unlock(&mutex_compteur_coups);    
-    sleep(TEMPS_AFFICHAGE_SOLUTION);
-    bonne();
+      pthread_mutex_unlock(&mutex_compteur_coups);    
+      /* Ce sleep permet au client d'avoir le temps d'afficher la solution avant que le serveur n'envoie d'autres commandes */
+      sleep(TEMPS_AFFICHAGE_SOLUTION);
+      bonne();
     }
     else{
+      /* Si la solution est bonne mais ne respecte pas le nombre de coups annoncé, appel à mauvaise() */
       pthread_mutex_unlock(&mutex_compteur_coups);    
       sleep(TEMPS_AFFICHAGE_SOLUTION);
       mauvaise();
     }
   }else{
+    /* Si la solution est mauvaise appel à mauvaise() */
     sleep(TEMPS_AFFICHAGE_SOLUTION);
     mauvaise();
   }
@@ -618,7 +638,6 @@ void nouveautour(){
   pthread_mutex_lock(&mutex_attente);
   client_list *att = file_attente;
   client_list *tmp;
-
   while(att != NULL && att->name != NULL){
     file_attente = att->next;
     tmp = att->next;
@@ -626,7 +645,6 @@ void nouveautour(){
     clients = att;
     att = tmp;
   }
-
   pthread_mutex_unlock(&mutex_attente);
   pthread_mutex_unlock(&mutex_clients);
 
@@ -636,6 +654,7 @@ void nouveautour(){
 
 /* plus de joueurs ayant proposé une solution restant, fin du tour */
 void finreso(){
+  /* Notification de fin de phase de resolution à tous les clients */
   pthread_mutex_lock(&mutex_clients);
   client_list *l = clients;
   char buffer[MAX_SIZE];
@@ -739,7 +758,7 @@ void nouvellesession(){
   }
 }
 
-/* vérifie les scores, si un des scores a atteint le score objectif, fin de la session */
+/* vérifie les scores, si un des scores a atteint le score objectif, fin de la session (dans bonne()) */
 int check_score(){
   pthread_mutex_lock(&mutex_clients);
   client_list *aux = clients;

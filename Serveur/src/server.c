@@ -81,6 +81,7 @@ void *thread_resolution(void *arg){
   /* Permet de relacher le mutex quand la thread est canceled */
   pthread_cleanup_push(unlock_mutex, 3);
   
+  /* Si aucun joueur actif, FINRESO directement */
   pthread_mutex_lock(&mutex_joueur_actif);
   prop = joueur_actif;
   pthread_mutex_unlock(&mutex_joueur_actif);
@@ -88,21 +89,26 @@ void *thread_resolution(void *arg){
     finreso();
   }
 
+  /* Mise à 0 du "booleen" permettant de savoir si le timer a été dépassé ou non */
   pthread_mutex_lock(&mutex_trop_long);
   trop_long = 0;
   pthread_mutex_unlock(&mutex_trop_long);  
   
+  /* Lancement du timer */
   if(pthread_create(&tid_timer, NULL, thread_timer, (void *) TEMPS_RESOLUTION) != 0){
     perror("pthread_create thread_timer in thread_resolution");
     exit(1);
   }
 
+  /* Attente du signal en provenance du timer ou du client (après avoir entré la solution) */
   pthread_mutex_lock(&mutex_cond_resolution);
   pthread_cond_wait(&cond_resolution, &mutex_cond_resolution);
   pthread_mutex_unlock(&mutex_cond_resolution);
 
+  /* Annulation de la thread timer dans tous les cas */
   pthread_cancel(tid_timer);
 
+  /* Si aucune solution n'a été entré dans le temps imparti, TROPLONG */
   pthread_mutex_lock(&mutex_trop_long);  
   if(trop_long == 1)
     troplong();
@@ -122,16 +128,21 @@ void* thread_enchere(void *arg){
   /* Permet de relacher le mutex quand la thread est canceled */
   pthread_cleanup_push(unlock_mutex, 2);
   
+  /* Phase courante = PHASE_ENCHERE */
   set_phase("enchere");
 
+  /* Lancement du timer */
   if(pthread_create(&tid_timer, NULL, thread_timer, (void *) TEMPS_ENCHERE) != 0){
     perror("pthread_create thread_timer in thread_enchere");
     exit(1);
   }
+
+  /* Attente de la du signal en provenance du timer */
   pthread_mutex_lock(&mutex_cond_enchere);
   pthread_cond_wait(&cond_enchere, &mutex_cond_enchere);
   pthread_mutex_unlock(&mutex_cond_enchere);
 
+  /* Annulation de la thread timer dans tous les cas */
   pthread_cancel(tid_timer);
 
   /* Fin de la phase d'enchere */
@@ -166,17 +177,21 @@ void* thread_reflexion(void *arg){
   /* Permet de relacher le mutex quand la thread est canceled */
   pthread_cleanup_push(unlock_mutex, 1);
   
-  /* Nouveau tour */
+  /* Phase courante = PHASE_REFLEXION */
   set_phase("reflexion");
   
+  /* Création de la thread timer */
   if(pthread_create(&tid_timer, NULL, thread_timer, (void *) TEMPS_REFLEXION) != 0){
     perror("pthread_create thread_timer in thread_reflexion");
     exit(1);
   }
+
+  /* Attente du signal en provenance du timer ou d'un client (après avoir saisi un nombre de coups) */
   pthread_mutex_lock(&mutex_cond_reflexion);
   pthread_cond_wait(&cond_reflexion, &mutex_cond_reflexion);
   pthread_mutex_unlock(&mutex_cond_reflexion); 
 
+  /* Annulation de la thread timer dans tous les cas */
   pthread_cancel(tid_timer);
    
   /* Fin de la phase de reflexion */
@@ -199,13 +214,19 @@ void* thread_reflexion(void *arg){
   pthread_exit(NULL);
 }
 
-/* gère la reception des messages d'un client */
-void* thread_reception(void *arg){
+/* traitement à effectuer pour chaque client */
+void* client_thread(void *arg){
   int sock_com = (int) arg;
+  pthread_t tid;
   int nb_clients;
   char cmd[20], user[MAX_SIZE], coups[200];
   int coups_int;
   char buffer[MAX_SIZE];
+
+  pthread_mutex_lock(&mutex_attente);
+  file_attente = add_new_client(file_attente, pthread_self(), sock_com);
+  pthread_mutex_unlock(&mutex_attente);
+
   while(read(sock_com, &buffer, MAX_SIZE) > 0){
     sscanf(buffer, "%[^/]/%[^/]/%[^/]/", cmd, user, coups);
     printf("\ncmd: %s\n", cmd);
@@ -226,8 +247,10 @@ void* thread_reception(void *arg){
       printf("nb client = %d\n", nb_clients);
       pthread_mutex_unlock(&mutex_clients);
       if(nb_clients == 2 && get_phase() == -1){
+	/* Lorsque le nombre de clients est de 2 et que le jeu n'est pas dans une phase, lancer une session */
 	session();
       }else if(get_phase() != -1){
+	/* Pour tout ceux qui se connectent en milieu de tour, envoyer juste le plateau */
 	session_attente(sock_com);
       }
     }
@@ -244,21 +267,24 @@ void* thread_reception(void *arg){
 	/* Relance d'une session si la liste d'attente est non vide */
 	nouvellesession();
       }
-
       pthread_exit(NULL);
     }
 
     /* SOLUTION */
     else if(strcmp(cmd, "SOLUTION") == 0){
       if(get_phase() == PHASE_REFLEXION){
+	/* Si on est dans la phase de réflexion alors c'est une proposition de nombre de coups */
 	pthread_mutex_lock(&mutex_conflit);
 	tuastrouve(user, coups_int);
 	pthread_mutex_unlock(&mutex_conflit);
       }else if(get_phase() == PHASE_RESOLUTION){
+	/* Si on est dans la phase de résolution alors c'est une proposition de solution */
+	/* Annulation du timer */
 	pthread_cancel(tid_timer);
 	pthread_mutex_lock(&mutex_trop_long);
 	trop_long = 0;
 	pthread_mutex_unlock(&mutex_trop_long);
+	/* Signalement à la thread phase résolution que la solution a été proposée */
 	pthread_mutex_lock(&mutex_cond_resolution);
 	pthread_cond_signal(&cond_resolution);
 	pthread_mutex_unlock(&mutex_cond_resolution);
@@ -270,6 +296,7 @@ void* thread_reception(void *arg){
     /* ENCHERE */
     else if(strcmp(cmd, "ENCHERE") == 0){
       if(get_phase() == PHASE_ENCHERE){
+	/* Protection avec un mutex car deux enchère peuvent arriver en meme temps mais ne peuvent etre traitées au meme moment (soucis de cohérence) */
 	pthread_mutex_lock(&mutex_conflit);
 	traitement_enchere(user, coups_int);
 	pthread_mutex_unlock(&mutex_conflit);
@@ -282,7 +309,7 @@ void* thread_reception(void *arg){
     }
 
     else{
-      printf("Commande reçu au mauvaise moment !\n");
+      printf("Commande reçu au mauvais moment !\n");
     }
 
     memset(cmd, '\0', 20);
@@ -292,22 +319,6 @@ void* thread_reception(void *arg){
   }
   pthread_exit((void*) 0);
  
-}
-
-/* traitement à effectuer pour chaque client */
-void* client_thread(void *arg){
-  int sock_com = (int) arg;
-  pthread_t tid;
-
-  pthread_mutex_lock(&mutex_attente);
-  file_attente = add_new_client(file_attente, pthread_self(), sock_com);
-  pthread_mutex_unlock(&mutex_attente);
-
-  /* Création d'une thread qui va gérer la réception de message */  
-  if(pthread_create(&tid, NULL, thread_reception, (void *) sock_com) != 0){
-    perror("pthread_create");
-    exit(1);
-  }
 
   pthread_exit((void*) 0);
 }

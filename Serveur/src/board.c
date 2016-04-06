@@ -7,6 +7,7 @@
 int cibles[16][16]; /* Tableau des cibles possibles */
 int pos[16][16]; /* Tableau des positions de robot et cibles impossibles */
 
+/* Création d'une square */
 square* create_square(){
   square *res = (square*) malloc(sizeof(square));
   res->top_wall = 0;
@@ -17,18 +18,12 @@ square* create_square(){
   return res;
 }
 
+/* Création d'un plateau sans énigme */
 board* create_terrain(char *plateau){
   board *res = (board*) malloc(sizeof(board));
-  /*res->tab = (square***) malloc(16*sizeof(square**));*/
-  int i,j, x,y;
+   int i,j, x,y;
   char mur;
   char buffer[10];
-
-  res->xc = 18;
-
-  /*  for(i=0; i<16; i++){
-      res->tab[i] = malloc(sizeof(square***)*16);
-      }*/
 
   /* Création et initialisation des cases à vide */
   for(i=0; i<16; i++){
@@ -69,16 +64,10 @@ board* create_terrain(char *plateau){
     i++;
   }
 
-  /*  for(i=0; i<16; i++){
-      for(j=0; j<16; j++){
-      printf("%d ", res->tab[i][j]->left_wall);
-      }
-      printf("\n");
-      } */ 
-
   return res;
 }
 
+/* Création d'un plateau avec énigme */
 board* create_board(char* plateau, char* enigme){
   board *res = (board*) malloc(sizeof(board));
   int i, j, x, y;
@@ -133,8 +122,7 @@ board* create_board(char* plateau, char* enigme){
   res->tab[xb][yb]->robot = 'B';
   res->tab[xj][yj]->robot = 'J';
   res->tab[xv][yv]->robot = 'V';
-  /*res->tab[xc][yc]->is_target = 1;*/
-
+ 
   /* Spécifier la position des robots */
   res->xr = xr;
   res->yr = yr;
@@ -148,21 +136,24 @@ board* create_board(char* plateau, char* enigme){
   /* Spécifier la couleur la case cible */
   res->xc = xc;
   res->yc = yc;
+
   /* Spécifier la couleur du robot à amener sur la cible */
   res->color = color;
   return res;
 }
 
+/* Permet de savoir si une solution est bonne ou fausse en fonction du terrain et d'une énigme */
 int simulation(char *desc_plateau, char *enigme, char *solution){
-  printf("[board.c] DEBUT SIMULATION\n");
   char couleur, direction;
   int i = 0;
   int xr, yr, xb, yb, xj, yj, xv, yv, xc, yc;
   
+  /* Reset du compteur de coups joués */
   pthread_mutex_lock(&mutex_compteur_coups);
   compteur_coups = 0;
   pthread_mutex_unlock(&mutex_compteur_coups);
   
+  /* Création du plateau et récupération des positions des robots */
   board *plateau = create_board(desc_plateau, enigme);
   xc = plateau->xc;
   yc = plateau->yc;
@@ -175,8 +166,7 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
   xv = plateau->xv;
   yv = plateau->yv;
 
-  printf("Simulation : Après initialisation\n");
-
+  /* Simulation de la solution */
   while(solution[i] != '\0'){
     if(i%2 != 0){
       pthread_mutex_lock(&mutex_compteur_coups);
@@ -187,7 +177,6 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
       /* Déplacement du robot */
       switch(couleur){
       case 'R':
-	printf("R\n");
 	switch(direction){
 	case 'H':
 	  xr = plateau->xr;
@@ -415,8 +404,6 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
     i++;
   }
 
-  printf("Avant détermination de solution\n");
-
   /* Déterminer si la solution est bonne */
   switch(plateau->color){
   case 'R':
@@ -454,14 +441,14 @@ int simulation(char *desc_plateau, char *enigme, char *solution){
   default:
     break;
   }
+  
+  destroy_plateau(plateau);
   return 0;
   
 }
 
-
+/* Permet d'obtenir la matrice des positions de cibles possibles */
 void init_matrice() {
-
-  printf("DEBUT init_matrice\n");
   int i, j;
   for (i = 0; i < 16; i++) {
     for (j = 0; j < 16; j++) {
@@ -470,24 +457,21 @@ void init_matrice() {
     }
   }
  
+  /* Positions impossibles */
   pos[7][7] = 1;
   pos[7][8] = 1;
   pos[8][7] = 1;
   pos[8][8] = 1;
   
+  /* Récupération du numéro de plateau */
   pthread_mutex_lock(&mutex_num_plateau);
   int num = num_plateau;
   pthread_mutex_unlock(&mutex_num_plateau);
 
+  /* Création du terrain sans énigme */
   board *tmp = create_terrain(plateaux[num_plateau]);
   
-  /*  for(i=0; i<16; i++){
-      for(j=0; j<16; j++){
-      printf("%d ", tmp->tab[i][j]->left_wall);
-      }
-      printf("\n");
-      } */ 
-
+  /* Si une case contient des murs adjacents, c'est une case potentielle pour une cible */
   for (i = 0; i < 16; i++) {
     for (j = 0; j < 16; j++) {
       if(tmp->tab[i][j]->top_wall == 1){
@@ -502,56 +486,14 @@ void init_matrice() {
     }
   }
 
+  /* Les 4 cases au milieu du tableau ne peuvent pas contenir de cible */
   cibles[7][7] = 0;
   cibles[7][8] = 0;
   cibles[8][7] = 0;
   cibles[8][8] = 0;
-
-  for (i = 0; i < 16; i++) {
-    for (j = 0; j < 16; j++) {
-      if(cibles[i][j] == 1)
-	printf("cibles[%d][%d]\n", i, j);
-    }
-  }
-  
-  /* cibles[0][0] = 1;
-     cibles[0][3] = 1;
-     cibles[0][4] = 1;
-     cibles[0][11] = 1;
-     cibles[0][12] = 1;
-     cibles[1][13] = 1;
-     cibles[2][5] = 1;
-     cibles[2][9] = 1;
-     cibles[3][15] = 1;
-     cibles[4][0] = 1;
-     cibles[4][2] = 1;
-     cibles[4][15] = 1;
-     cibles[5][7] = 1;
-     cibles[5][14] = 1;
-     cibles[6][1] = 1;
-     cibles[6][11] = 1;
-     cibles[8][5] = 1;
-     cibles[9][1] = 1;
-     cibles[9][12] = 1;
-     cibles[9][15] = 1;
-     cibles[10][4] = 1;
-     cibles[10][15] = 1;
-     cibles[11][0] = 1;
-     cibles[12][0] = 1;
-     cibles[12][9] = 1;
-     cibles[13][5] = 1;
-     cibles[14][3] = 1;
-     cibles[14][11] = 1;
-     cibles[15][0] = 1;
-     cibles[15][6] = 1;
-     cibles[15][7] = 1;
-     cibles[15][14] = 1;
-     cibles[15][13] = 1;
-     cibles[15][15] = 1;*/
-  printf("FIN init_matrice\n");
-
 }
 
+/* Récupération d'une case cible aléatoire à partir de la matrice */
 int *get_random_cible() {
 
   int *cible = (int*) malloc(2*sizeof(int));
@@ -594,10 +536,12 @@ int *get_random_cible() {
   return cible;
 }
 
+/* Génération d'une énigme aléatoire */
 char *genererate_random_enigme() {
-
-  printf("DEBUT generate_random_cible\n");
+  /* Initialisation de la matrice des cibles potentielles */
   init_matrice();
+
+  /* Récupération de positions aléatoires pour les robots à partir de la matrice pos */
   srand(time(NULL));
   int xr, yr ,xb, yb, xj, yj, xv, yv, xc, yc;
   xr = rand()%16;
@@ -648,7 +592,18 @@ char *genererate_random_enigme() {
   char *enigme = (char*) malloc(40*sizeof(char));
   sprintf(enigme, "(%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s)",
 	  xr, yr, xb, yb, xj, yj, xv, yv, xc, yc, color);
-  printf("[generator.c] generate : %s\n", enigme); 
-  printf("FIN generate_random_cible\n");
+  if(cible != NULL)
+    free(cible);
   return enigme;
+}
+
+/* Free plateau */
+void destroy_plateau(board *plateau){
+  int i,j;
+  for(i=0; i<16; i++){
+    for(j=0; j<16; j++){
+      free(plateau->tab[i][j]);
+    }
+  }
+  free(plateau);
 }
