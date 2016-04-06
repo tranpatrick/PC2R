@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.image.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<BorderPane fx:id="mainFrame" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.GameController">
+   <bottom>
+      <HBox prefHeight="15.0" prefWidth="580.0" spacing="20.0" BorderPane.alignment="CENTER">
+         <children>
+            <Label alignment="CENTER" prefHeight="27.0" prefWidth="67.0" text="Username" textAlignment="CENTER" />
+            <TextField fx:id="userTextField" />
+            <Label prefHeight="24.0" prefWidth="51.0" text="Serveur" />
+            <TextField fx:id="hostTextField" text="localhost">
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+            </TextField>
+            <Button fx:id="loginButton" mnemonicParsing="false" text="Connexion" />
+            <HBox alignment="CENTER">
+               <children>
+                  <Text fx:id="errorMessageText" fill="RED">
+                     <HBox.margin>
+                        <Insets />
+                     </HBox.margin>
+                  </Text>
+               </children>
+            </HBox>
+         </children>
+      </HBox>
+   </bottom>
+   <top>
+      <HBox alignment="CENTER_RIGHT" nodeOrientation="LEFT_TO_RIGHT" prefHeight="40.0" prefWidth="600.0" BorderPane.alignment="CENTER">
+         <children>
+            <Label fx:id="phaseLabel" minHeight="-Infinity" minWidth="-Infinity" textAlignment="CENTER" textOverrun="CENTER_ELLIPSIS">
+               <HBox.margin>
+                  <Insets right="400.0" />
+               </HBox.margin>
+               <font>
+                  <Font name="System Bold" size="21.0" />
+               </font>
+            </Label>
+            <Button fx:id="logoutButton" alignment="CENTER" contentDisplay="CENTER" disable="true" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" text="Deconnexion" textAlignment="CENTER" />
+         </children>
+         <padding>
+            <Insets right="10.0" />
+         </padding>
+      </HBox>
+   </top>
+   <left>
+      <BorderPane layoutX="50.0" prefHeight="546.0" prefWidth="269.0" BorderPane.alignment="CENTER">
+         <bottom>
+            <HBox prefHeight="68.0" prefWidth="269.0" BorderPane.alignment="CENTER">
+               <children>
+                  <TextArea fx:id="sendChatTextArea" disable="true" prefHeight="61.0" prefWidth="215.0" promptText="Enter a message ..." wrapText="true" />
+                  <HBox alignment="BOTTOM_RIGHT" prefHeight="68.0" prefWidth="60.0">
+                     <children>
+                        <Button fx:id="sendChatButton" disable="true" mnemonicParsing="false" prefHeight="112.0" prefWidth="52.0" text="Send">
+                           <HBox.margin>
+                              <Insets left="5.0" />
+                           </HBox.margin>
+                        </Button>
+                     </children>
+                  </HBox>
+               </children>
+            </HBox>
+         </bottom>
+         <BorderPane.margin>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+         </BorderPane.margin>
+         <center>
+            <TextArea fx:id="chatTextArea" editable="false" prefHeight="430.0" prefWidth="184.0" text="" wrapText="true" BorderPane.alignment="CENTER">
+               <BorderPane.margin>
+                  <Insets bottom="10.0" top="10.0" />
+               </BorderPane.margin>
+            </TextArea>
+         </center>
+      </BorderPane>
+   </left>
+   <padding>
+      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+   </padding>
+   <center>
+      <GridPane fx:id="plateauGrid" prefHeight="446.0" prefWidth="558.0" BorderPane.alignment="CENTER">
+        <columnConstraints>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        </rowConstraints>
+         <padding>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+         </padding>
+      </GridPane>
+   </center>
+   <right>
+      <VBox prefHeight="546.0" prefWidth="251.0" spacing="10.0" BorderPane.alignment="CENTER">
+         <BorderPane.margin>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+         </BorderPane.margin>
+         <children>
+            <HBox alignment="CENTER">
+               <children>
+                  <Label fx:id="tourLabel" textAlignment="CENTER" textFill="#3471ff">
+                     <font>
+                        <Font name="System Bold" size="18.0" />
+                     </font>
+                  </Label>
+               </children>
+               <VBox.margin>
+                  <Insets />
+               </VBox.margin>
+            </HBox>
+            <VBox spacing="5.0">
+               <children>
+                  <HBox alignment="CENTER" prefHeight="42.0" prefWidth="251.0" spacing="5.0">
+                     <children>
+                        <TextField fx:id="coupTextField" alignment="CENTER" disable="true" minHeight="-Infinity" minWidth="-Infinity" prefHeight="53.0" prefWidth="172.0" promptText="Coups" />
+                        <Button fx:id="trouveEnchereButton" disable="true" mnemonicParsing="false" prefHeight="53.0" prefWidth="84.0" text="Trouve" textAlignment="CENTER" />
+                     </children>
+                  </HBox>
+                  <HBox alignment="CENTER">
+                     <children>
+                        <Label fx:id="errorLabel" />
+                     </children>
+                  </HBox>
+               </children>
+            </VBox>
+            <VBox prefHeight="77.0" prefWidth="251.0" spacing="5.0">
+               <children>
+                  <HBox alignment="CENTER">
+                     <children>
+                        <VBox fx:id="solutionVBox" alignment="CENTER" visible="false">
+                           <children>
+                              <Label text="Focus zone ci-dessous pour taper solution">
+                                 <font>
+                                    <Font size="11.0" />
+                                 </font></Label>
+                              <Label text="Exemple solution : RDRHVDVHVDRB" />
+                           </children>
+                        </VBox>
+                     </children>
+                  </HBox>
+                  <HBox alignment="CENTER" spacing="5.0">
+                     <children>
+                        <TextArea fx:id="solutionTextArea" disable="true" editable="false" minHeight="-Infinity" minWidth="-Infinity" prefHeight="47.0" prefWidth="181.0" promptText="Cliquez ici" wrapText="true" />
+                        <Button fx:id="solutionButton" disable="true" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" prefHeight="47.0" prefWidth="84.0" text="Submit" />
+                     </children>
+                  </HBox>
+                  <Label fx:id="coupsSolutionLabel">
+                     <padding>
+                        <Insets left="20.0" />
+                     </padding>
+                  </Label>
+               </children>
+            </VBox>
+            <TextArea fx:id="serverAnswer" editable="false" focusTraversable="false" prefHeight="186.0" prefWidth="251.0" wrapText="true" />
+            <TableView fx:id="scoreTableView" focusTraversable="false" prefHeight="190.0" prefWidth="251.0">
+               <padding>
+                  <Insets bottom="2.0" left="2.0" right="2.0" top="2.0" />
+               </padding>
+            </TableView>
+         </children>
+      </VBox>
+   </right>
+</BorderPane>
